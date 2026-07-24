@@ -4092,23 +4092,37 @@ function handle(d){
             fetch('/reveal-narrator-done', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ revealRoundId: d.revealRoundId }) }).catch(()=>{});
           }
         };
+        // ✅ תיקון: מודיעים לשרת בפועל מתי העקיצה/מחמאה סיימה להתנגן (או שאין כזו/TTS כבוי) —
+        // כך השרת עובר לשאלה הבאה בדיוק כשצריך, לא לפני שהיא נשמעה ולא סתם מחכה יותר
+        // מהנדרש כשאין עקיצה. _ttsPlay תמיד קורא ל-callback בסוף, גם אם ה-TTS נכשל.
+        let zingerDoneFired = false;
+        const notifyZingerDone = () => {
+          if (zingerDoneFired) { ttsLog('notifyZingerDone — already fired, skip'); return; }
+          zingerDoneFired = true;
+          ttsLog('zinger done → notifying server zinger-narrator-done', { revealRoundId: d.revealRoundId });
+          if (d.revealRoundId != null) {
+            fetch('/zinger-narrator-done', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ revealRoundId: d.revealRoundId }) }).catch(()=>{});
+          }
+        };
         if (ttsOn) {
           // ✅ אין יותר setTimeout 300ms — ה-TTS כבר במטמון (pre-warm ב-beginAnswerWindow, 22 שניות מראש).
           // הקריין מתחיל לדבר מיד עם הופעת מסך התשובה.
           // ✅ תיקון: העקיצה/מחמאה כבר לא מחוברת לאותו משפט כמו ה"תשובה הנכונה" — היא לא
           // ניתנת ל-pre-warm (לא יודעים מראש מי יזכה בה), אז חיבור שלה לאותו משפט גרם לעיכוב
           // בדיוק בהודעה הכי קריטית (התשובה הנכונה). עכשיו: התשובה הנכונה תמיד מוכנה מראש
-          // ומתנגנת מיד, מודיעה לשרת מיד שסיימה (המשחק ממשיך בלי לחכות), והעקיצה/מחמאה (אם
-          // יש) מתנגנת בנפרד אחריה ברקע — אם היא לא מספיקה/נקטעת בגלל השאלה הבאה, לא נורא.
+          // ומתנגנת מיד, מודיעה לשרת מיד שסיימה, והעקיצה/מחמאה (אם יש) מתנגנת בנפרד אחריה —
+          // והשרת מחכה לאישור זינגר-בפועל לפני מעבר לשאלה הבאה (ראו /zinger-narrator-done).
           const revealText = 'התשובה הנכונה היא: ' + d.correctText;
           const zingerText = d.narratorZinger || null;
           _ttsPlay(revealText, TTS_PRI.QUESTION, () => {
             notifyRevealDone();
-            if (zingerText) _ttsPlay(zingerText, TTS_PRI.LOW, () => {});
+            if (zingerText) _ttsPlay(zingerText, TTS_PRI.LOW, notifyZingerDone);
+            else notifyZingerDone();
           });
           _ttsNarratorDone = notifyRevealDone;
         } else {
           notifyRevealDone();
+          notifyZingerDone(); // TTS כבוי אצל הלקוח הזה — אין מה לחכות לו, מדווחים מיד
         }
       }
       else { addFeed('📊','תוצאות ההצבעה'); if(d.revealRoundId!=null){ ttsLog('reveal(vote) → notifying server reveal-narrator-done immediately', { revealRoundId: d.revealRoundId }); fetch('/reveal-narrator-done',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revealRoundId:d.revealRoundId})}).catch(()=>{}); } }
