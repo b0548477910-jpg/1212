@@ -711,6 +711,13 @@ const REVEAL_NARRATOR_FALLBACK_MS = 16000; // ✅ הוגדל מ-7000: טקסט r
 // היה קצר מדי וגרם למשחק "לוותר" ולהמשיך הלאה בדיוק לפני שהאודיו הספיק להתנגן, כך שאף
 // אחד לא שמע את העקיצה/מחמאה בכלל (ראו לוג עם timing מדויק של 7.000 שניות).
 const REVEAL_MIN_DISPLAY_MS = 4000; // גם אם הקריין מסיים מהר מאוד, משאירים את מסך התשובה זמן מינימלי לקריאה
+// 🩹 גרסה 2 של תיקון "העקיצה/מחמאה אף פעם לא נשמעת": במקום זמן המתנה קבוע וארוך שמאט את כל
+// המשחק גם כשאין עקיצה, המערכת עכשיו אדפטיבית — כשיש עקיצה, השרת ממתין לאישור בפועל
+// מהלקוח (/zinger-narrator-done) שהיא סיימה להתנגן, ורק אז עובר לשאלה הבאה. אם משהו משתבש
+// (למשל ה-TTS נכשל), יש רשת ביטחון (ZINGER_WAIT_FALLBACK_MS) שלא תיתקע את המשחק לנצח.
+const ZINGER_WAIT_FALLBACK_MS = 9000;
+let revealHadZinger = false; // דגל לסיבוב ה-reveal הנוכחי — נקרא ע"י /reveal-narrator-done
+let revealZingerAdvanceTimer = null; // רשת ביטחון: אם zinger-narrator-done לא מגיע, לא נתקעים
 
 function showQuestion() {
   if (currentQuestion >= questions.length) { endGame(); return; }
@@ -875,6 +882,7 @@ function revealAnswer() {
       log('🎭', `עקיצה/מחמאה: "${narratorZinger}"`);
     }
   }
+  revealHadZinger = !!narratorZinger; // ✅ advanceToNextQuestion יבדוק את זה כדי לתת לעקיצה זמן אמיתי להישמע
 
   // ✅ pre-warm שאלה הבאה: הזמן עד לשאלה הבאה (~4-7 שניות) מספיק לייצור TTS.
   // כך כשהלקוח יקבל את השאלה הבאה ויקרא preloadEdge, האודיו כבר יהיה במטמון
@@ -932,6 +940,7 @@ function advanceToNextQuestion(rRoundId) {
   }
   revealAdvanceStartedFor = rRoundId;
   clearTimeout(revealNarratorFallbackTimer); revealNarratorFallbackTimer = null;
+  clearTimeout(revealZingerAdvanceTimer); revealZingerAdvanceTimer = null;
   const elapsedSinceReveal = Date.now() - rRoundId;
   const extraWait = Math.max(0, REVEAL_MIN_DISPLAY_MS - elapsedSinceReveal);
   if (extraWait > 0) {
@@ -1367,6 +1376,13 @@ app.get('/', (req, res) => {
   const file = path.join(__dirname, 'trivia.html');
   if (fs.existsSync(file)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.send(fs.readFileSync(file)); }
   else res.status(404).send('not found');
+});
+
+// נתיב קליל לבדיקת "השרת ער" (keep-alive/uptime pinger) — בכוונה לא מחזיר את trivia.html
+// (444KB) כדי לא לבזבז את מכסת ה-5GB bandwidth החינמית של Render על כל פינג.
+app.get('/health', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.send('OK');
 });
 
 // ========== TTS — espeak-ng עברית מקומית ==========
@@ -2375,10 +2391,36 @@ app.post('/reveal-narrator-done', (req, res) => {
   const { revealRoundId: rid } = req.body || {};
   const now = Date.now();
   if (rid === revealRoundId) {
-    log('🎙️', `reveal-narrator-done התקבל — ${now - revealRoundId}ms אחרי גילוי התשובה (revealRoundId=${rid}) → ממשיך לשאלה הבאה`);
-    advanceToNextQuestion(rid);
+    log('🎙️', `reveal-narrator-done התקבל — ${now - revealRoundId}ms אחרי גילוי התשובה (revealRoundId=${rid})`);
+    if (revealHadZinger) {
+      // ✅ יש עקיצה/מחמאה בסיבוב הזה — לא עוברים לשאלה הבאה עדיין, מחכים לאישור אמיתי
+      // מהלקוח (/zinger-narrator-done) שהיא סיימה להתנגן (עם רשת ביטחון אם משהו משתבש).
+      log('🎭', `יש עקיצה/מחמאה בסיבוב — ממתינים לאישור ניגון בפועל לפני מעבר לשאלה הבאה`);
+      clearTimeout(revealZingerAdvanceTimer);
+      revealZingerAdvanceTimer = setTimeout(() => {
+        log('⏰', `zinger: fallback — לא התקבל zinger-narrator-done תוך ${ZINGER_WAIT_FALLBACK_MS}ms, ממשיכים לשאלה הבאה בכל זאת (revealRoundId=${rid})`);
+        advanceToNextQuestion(rid);
+      }, ZINGER_WAIT_FALLBACK_MS);
+    } else {
+      advanceToNextQuestion(rid);
+    }
   } else {
     log('⚠️', `reveal-narrator-done התקבל עם revealRoundId ישן/לא תואם (${rid}) — הנוכחי הוא ${revealRoundId}. מתעלם.`);
+  }
+  res.json({ ok: true });
+});
+
+// /zinger-narrator-done — הלקוח מודיע שהעקיצה/מחמאה (narratorZinger) סיימה להתנגן בפועל
+// (או נכשלה/נזרקה — _ttsPlay תמיד קורא ל-callback שלה בסוף, ראו הערה ב-trivia.html).
+// זה מה שבפועל גורם למעבר לשאלה הבאה כשיש עקיצה בסיבוב, ראו /reveal-narrator-done למעלה.
+app.post('/zinger-narrator-done', (req, res) => {
+  const { revealRoundId: rid } = req.body || {};
+  if (rid === revealRoundId) {
+    log('🎭', `zinger-narrator-done התקבל — העקיצה/מחמאה סיימה להתנגן (revealRoundId=${rid}) → ממשיך לשאלה הבאה`);
+    clearTimeout(revealZingerAdvanceTimer); revealZingerAdvanceTimer = null;
+    advanceToNextQuestion(rid);
+  } else {
+    log('⚠️', `zinger-narrator-done התקבל עם revealRoundId ישן/לא תואם (${rid}) — הנוכחי הוא ${revealRoundId}. מתעלם.`);
   }
   res.json({ ok: true });
 });
