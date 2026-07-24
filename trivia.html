@@ -3883,11 +3883,16 @@ setInterval(() => {
 
 function handle(d){
   switch(d.type){
-    case 'settings-changed':
-      // עדכון חי מהשרת — הגדרה שונתה במחשב אחר, מוחל כאן מיידית בלי רענון דף
-      applySettings(d.settings);
+    case 'settings-changed': {
+      // ✅ תיקון: מסננים החוצה מפתחות שהם הד של שינוי שהמחשב הזה עצמו שלח לפני רגע —
+      // אחרת כל שינוי הגדרה "חוזר" מהשרת ונראה כאילו הגיע ממחשב אחר (טוסט מטעה + ריצה
+      // מיותרת של applySettings שגורמת לרינדור DOM חוזר / "קפיצת מסך").
+      const { filtered, isEmpty } = _filterOutMyOwnEchoes(d.settings || {});
+      if (isEmpty) break; // הכל היה הד עצמי — שום דבר אמיתי לעדכן, לא מציגים טוסט
+      applySettings(filtered);
       if (typeof showToast === 'function') showToast('🔄 הגדרות עודכנו ממחשב אחר');
       break;
+    }
 
     case 'init':
       players={};d.players.forEach(p=>players[p.callId]=p);
@@ -6872,8 +6877,15 @@ const SETTINGS_KEYS = ['trivia_theme','trivia_fs','trivia_voice','trivia_voice_r
 // הגלובלי מסתמך על activeRoomId שמוגדר רק כשמשחק *כבר רץ בפועל*, אז שינוי הגדרות
 // מהפאנל *לפני* שהתחיל משחק (המצב הנפוץ) היה "בורח" בטעות לקובץ הגלובלי.
 const ROOM_SCOPED_SETTING_KEYS = ['trivia_voice', 'trivia_voice_rate', 'trivia_voice_pitch', 'trivia_theme', 'trivia_fs', 'trivia_zinger_chance'];
+// 🩹 תיקון: broadcast() בשרת שולח 'settings-changed' לכל המחשבים המחוברים — כולל בחזרה
+// למחשב ששלח את השינוי בעצמו! בלי הזיכרון הזה, המחשב ששינה הגדרה מקבל "הד" של עצמו,
+// ומגיב אליו כאילו הגיע ממחשב זר: מציג טוסט מטעה "עודכן ממחשב אחר" ומפעיל applySettings()
+// מיותר שגורם לרינדור DOM חוזר (זו בדיוק "קפיצת המסך"/היעלמות אותיות לרגע שדווחה).
+let _recentlySetByMe = {}; // key -> {value, ts}
+const _SETTINGS_ECHO_WINDOW_MS = 4000;
 function saveSettingToServer(key, value) {
   const strVal = typeof value === 'string' ? value : JSON.stringify(value);
+  _recentlySetByMe[key] = { value: strVal, ts: Date.now() };
   try { localStorage.setItem(key, strVal); } catch {} // גיבוי מקומי בלבד, לא נקרא בעדיפות
   const body = {}; body[key] = strVal;
   if (typeof gwRoomId !== 'undefined' && gwRoomId && ROOM_SCOPED_SETTING_KEYS.includes(key)) {
@@ -6890,6 +6902,23 @@ function saveSettingToServer(key, value) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   }).catch(() => {});
+}
+
+// מסנן מתוך אובייקט הגדרות שהתקבל מהשרת (SSE) את המפתחות שהם בעצם הד של שינוי שהמחשב
+// הזה עצמו שלח לפני רגע — כדי שרק שינויים שבאמת הגיעו ממחשב אחר יטופלו/יוצגו בטוסט.
+function _filterOutMyOwnEchoes(s) {
+  const now = Date.now();
+  const result = {};
+  let hadEcho = false;
+  Object.keys(s).forEach(k => {
+    const mine = _recentlySetByMe[k];
+    if (mine && mine.value === s[k] && (now - mine.ts) < _SETTINGS_ECHO_WINDOW_MS) {
+      hadEcho = true; // זה אני — לא כולל את זה בתוצאה
+    } else {
+      result[k] = s[k];
+    }
+  });
+  return { filtered: result, hadEcho, isEmpty: Object.keys(result).length === 0 };
 }
 
 // ===== לוג מאוחד — שולח אירועים משמעותיים מהדפדפן לשרת, כדי שהכל יתועד במקום אחד =====
