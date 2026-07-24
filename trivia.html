@@ -5595,7 +5595,11 @@ function _ttsPlayServer(text, voiceId, done, isStale) {
     }
     const audio = new Audio(url);
     audio.onended = () => { ttsLog('Server audio.onended'); done(); };
-    audio.onerror = (e) => { ttsLog('Server audio.onerror', e?.type); notifyTtsFailure(); done(); };
+    // 🩹 תיקון: audio.onerror/play().catch יכולים לירות גם כשההשמעה בוטלה בכוונה (cancelAllSpeech
+    // קרא pause() כי כבר התחיל קול חדש) — זו לא תקלה אמיתית בשירות הקריינות, רק תופעת לוואי
+    // רגילה של דפדפן ("interrupted by a call to pause()"). בלי הבדיקה הזו, notifyTtsFailure()
+    // רץ גם על ביטולים תקינים ומציג למשתמש טוסט מבהיל ("שירות הקריינות לא הגיב") שלא נכון בפועל.
+    audio.onerror = (e) => { ttsLog('Server audio.onerror', e?.type); if (!(isStale && isStale())) notifyTtsFailure(); done(); };
     _edgeAudio = audio;
     audio.play()
       .then(() => {
@@ -5630,7 +5634,7 @@ function _ttsPlayServer(text, voiceId, done, isStale) {
       })
       .catch(e => {
         ttsLog('Server audio.play() FAILED', e?.message);
-        notifyTtsFailure();
+        if (!(isStale && isStale())) notifyTtsFailure();
         done();
       });
   };
