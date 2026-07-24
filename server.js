@@ -514,12 +514,14 @@ function handleAnswer(player, chosen) {
       questionTimer = setTimeout(revealAnswer, 3000);
       broadcast({ type: 'allAnswered', secsLeft: 3 });
       log('✅', 'כולם ענו — חשיפה בעוד 3 שניות');
+      prewarmZingerEarly(q);
     } else if (allAnswered && questionTimer) {
       // חלון התשובה כבר פעיל — רק מקצרים את הטיימר הקיים
       clearTimeout(questionTimer);
       questionTimer = setTimeout(revealAnswer, 3000);
       broadcast({ type: 'allAnswered', secsLeft: 3 });
       log('✅', 'כולם ענו (חלון פעיל) — חשיפה בעוד 3 שניות');
+      prewarmZingerEarly(q);
     }
   };
 
@@ -718,6 +720,40 @@ const REVEAL_MIN_DISPLAY_MS = 4000; // גם אם הקריין מסיים מהר 
 const ZINGER_WAIT_FALLBACK_MS = 9000;
 let revealHadZinger = false; // דגל לסיבוב ה-reveal הנוכחי — נקרא ע"י /reveal-narrator-done
 let revealZingerAdvanceTimer = null; // רשת ביטחון: אם zinger-narrator-done לא מגיע, לא נתקעים
+// 🩹 שיפור: bereshit — כשכולם עונים לפני שהזמן נגמר, יודעים כבר אז (לא רק ב-revealAnswer)
+// מי צדק/טעה, אז אפשר לבחור את העקיצה/מחמאה ולהתחיל להכין (fetchTTS) אותה כבר באותו רגע,
+// ולא לחכות לרגע ה-reveal עצמו. זה "גונב" בחזרה שניות יקרות של המתנה אמיתית שהמשתמש חש.
+let precomputedZinger = null;
+let precomputedZingerForRound = null; // questionStartedAt שעבורו precomputedZinger תקף
+
+function pickZinger(q) {
+  const zingerChance = parseFloat(getRoomSetting('trivia_zinger_chance', ZINGER_CHANCE_DEFAULT));
+  if (gameMode === 'vote' || Math.random() >= zingerChance) return null;
+  const answered = Object.values(players).filter(p => p.answered);
+  const wrong = answered.filter(p => p._chosen !== q.correct);
+  const right = answered.filter(p => p._chosen === q.correct);
+  const preferRoast = Math.random() < 0.5;
+  let pool = null, target = null;
+  if (preferRoast && wrong.length) { target = wrong[Math.floor(Math.random() * wrong.length)]; pool = getEffectivePhrasePool('roast'); }
+  else if (right.length) { target = right[Math.floor(Math.random() * right.length)]; pool = getEffectivePhrasePool('compliment'); }
+  else if (wrong.length) { target = wrong[Math.floor(Math.random() * wrong.length)]; pool = getEffectivePhrasePool('roast'); }
+  if (target && pool && pool.length) {
+    return pool[Math.floor(Math.random() * pool.length)].replace('{name}', target.name);
+  }
+  return null;
+}
+
+// נקרא ברגע שכולם ענו (לא ברגע ה-reveal בפועל, שקורה כ-3 שניות אחר כך) — נותן ל-fetchTTS
+// זמן ריצה אמיתי ברקע לפני שהעקיצה/מחמאה בכלל נחוצה, כדי לצמצם/לבטל את ההמתנה שהמשתמש חש.
+function prewarmZingerEarly(q) {
+  precomputedZingerForRound = questionStartedAt;
+  precomputedZinger = pickZinger(q);
+  if (precomputedZinger) {
+    const voice = _lastClientVoice || getRoomSetting('trivia_voice', 'edge:avri');
+    fetchTTS(precomputedZinger, voice, _lastClientSpeed).catch(() => {});
+    log('🔮🎭', `pre-warming עקיצה/מחמאה מוקדם (כולם ענו, ~3s לפני reveal): "${precomputedZinger}"`);
+  }
+}
 
 function showQuestion() {
   if (currentQuestion >= questions.length) { endGame(); return; }
@@ -858,30 +894,14 @@ function revealAnswer() {
   }
   log('💡', `תשובה: ${q.a[q.correct]}`);
 
-  // ✅ עקיצה/מחמאה אקראית מהקריין — רק עכשיו (reveal) אנחנו יודעים מי ענה נכון/לא נכון.
-  // לא יכולנו לדעת את זה מוקדם יותר (זו בדיוק הסיבה שאסור לחשוף נכון/לא נכון בזמן אמת —
-  // ראו handleAnswer), אז אי אפשר לעשות pre-warm לזה מראש כמו לשאר הטקסטים; זה אומר
-  // שבסיבוב עם עקיצה/מחמאה יש עיכוב קטן וסביר בהתחלת הקראת התשובה (cache miss חד-פעמי).
-  let narratorZinger = null;
-  const zingerChance = parseFloat(getRoomSetting('trivia_zinger_chance', ZINGER_CHANCE_DEFAULT));
-  if (gameMode !== 'vote' && Math.random() < zingerChance) {
-    // ✅ תיקון: הסרתי את החסימה של phone==='admin' כאן. היא הייתה נחוצה במקום אחר (כדי
-    // ש"אדמין" לא יופיע ברשימת השחקנים הגלויה על המסך), אבל כאן היא בטעות מנעה לגמרי כל
-    // עקיצה/מחמאה בכל פעם שאדמין הוא היחיד ששיחק/בדק (בדיוק התרחיש שראינו בלוגים) — כי
-    // "answered" תמיד יצא ריק, אז גם עם 100% סיכוי שום עקיצה לא הייתה נבחרת.
-    const answered = Object.values(players).filter(p => p.answered);
-    const wrong = answered.filter(p => p._chosen !== q.correct);
-    const right = answered.filter(p => p._chosen === q.correct);
-    const preferRoast = Math.random() < 0.5;
-    let pool = null, target = null;
-    if (preferRoast && wrong.length) { target = wrong[Math.floor(Math.random() * wrong.length)]; pool = getEffectivePhrasePool('roast'); }
-    else if (right.length) { target = right[Math.floor(Math.random() * right.length)]; pool = getEffectivePhrasePool('compliment'); }
-    else if (wrong.length) { target = wrong[Math.floor(Math.random() * wrong.length)]; pool = getEffectivePhrasePool('roast'); }
-    if (target && pool && pool.length) {
-      narratorZinger = pool[Math.floor(Math.random() * pool.length)].replace('{name}', target.name);
-      log('🎭', `עקיצה/מחמאה: "${narratorZinger}"`);
-    }
-  }
+  // ✅ שיפור: אם כולם ענו מוקדם (המקרה השכיח), העקיצה/מחמאה כבר נבחרה והתחילה להיטען
+  // ברקע מיד כשזה קרה (ראו prewarmZingerEarly, נקרא מתוך checkAllAnswered) — כאן פשוט
+  // נעשה שימוש בתוצאה המוכנה במקום לחכות עד עכשיו כדי להתחיל. אם הטיימר פשוט נגמר בלי
+  // שכולם הספיקו לענות (המקרה הפחות שכיח), אין לנו pre-compute תקף לסיבוב הזה — מחשבים
+  // עכשיו כרגיל (יהיה עיכוב קטן וסביר, בדיוק כמו שהיה קודם).
+  let narratorZinger = (precomputedZingerForRound === questionStartedAt) ? precomputedZinger : pickZinger(q);
+  if (narratorZinger) log('🎭', `עקיצה/מחמאה: "${narratorZinger}"`);
+  precomputedZinger = null; precomputedZingerForRound = null;
   revealHadZinger = !!narratorZinger; // ✅ advanceToNextQuestion יבדוק את זה כדי לתת לעקיצה זמן אמיתי להישמע
 
   // ✅ pre-warm שאלה הבאה: הזמן עד לשאלה הבאה (~4-7 שניות) מספיק לייצור TTS.
