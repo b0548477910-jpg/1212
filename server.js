@@ -787,6 +787,21 @@ function showQuestion() {
     fetchTTS(qText, qVoice, _lastClientSpeed).catch(() => {});
     log('🔮', `pre-warming שאלה ${currentQuestion + 1}: "${qText.slice(0, 50)}" [voice=${qVoice}]`);
   })();
+  // 🩹 תיקון: "התשובה הנכונה היא: X" ידועה כבר עכשיו (לא תלויה במי ענה, בשונה מהעקיצה/מחמאה) —
+  // אין סיבה לחכות עד beginAnswerWindow כדי להתחיל להכין אותה. beginAnswerWindow מופעל רק
+  // אחרי ש-narrator-ready מגיע (כלומר אחרי שהקריין מסיים להקריא את השאלה, ~10-15 שניות), וגם
+  // אז ה"ראש התחלה" של 22 שניות שההערה שם מתארת מניח שחלון התשובה ירוץ עד הסוף — אבל אם
+  // "כולם ענו" מקצר אותו (למשל שחקן יחיד/אדמין שעונה כמעט מיד), בפועל נשארו רק כמה שניות,
+  // לא מספיק ל-edge-tts (fetch רשת אמיתי, 3-8 שניות) — וזה גרם ל"תשובה הנכונה" עצמה להישמע
+  // באיחור מורגש. עכשיו: מתחילים להכין אותה כבר כאן, בתחילת השאלה — ראש התחלה גדול בהרבה,
+  // בפרקטיקה כמעט תמיד מספיק גם כשחלון התשובה מתקצר. fetchTTS כבר עשוי dedup/cache, אז
+  // הקריאה הזהה שעדיין קיימת ב-beginAnswerWindow לא יוצרת עבודה כפולה — היא רק "בודקת" שוב.
+  (() => {
+    const revealText = `התשובה הנכונה היא: ${q.a[q.correct]}`;
+    const voice = _lastClientVoice || getRoomSetting('trivia_voice', 'edge:avri');
+    fetchTTS(revealText, voice, _lastClientSpeed).catch(() => {});
+    log('🔮💡', `pre-warming מוקדם מאוד תשובה נכונה לשאלה ${currentQuestion + 1}: "${revealText.slice(0,40)}"`);
+  })();
   broadcast({ type: 'question', index: currentQuestion, total: questions.length, question: q.q, answers: q.a, topic: q.topic, mode: gameMode, timeLimit, roundId });
   log('🎙️', `שאלה ${currentQuestion + 1}: ממתין ל-narrator-ready (roundId=${roundId}) לפני הפעלת הטיימר האמיתי — fallback אם לא מגיע תוך ${NARRATOR_FALLBACK_MS}ms`);
 
