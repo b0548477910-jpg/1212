@@ -5417,15 +5417,27 @@ let _ttsFallback     = null;      // timer fallback
 
 // ===== TTS DEBUG LOGGER =====
 const TTS_LOG = [];
+// מציג שעה בשעון ישראל (Asia/Jerusalem) במפורש — לא תלוי ב-timezone של הדפדפן/OS,
+// כדי שחותמות הזמן בלוג תמיד יתאימו לכותרת (שגם היא בשעון מקומי) ולא ל-UTC.
+function _fmtTimeIL(tsOrDate) {
+  const d = (tsOrDate instanceof Date) ? tsOrDate : new Date(tsOrDate);
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem', hour12: false,
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  }).formatToParts(d);
+  const get = t => parts.find(p => p.type === t).value;
+  const ms = String(d.getMilliseconds()).padStart(3, '0');
+  return `${get('hour')}:${get('minute')}:${get('second')}.${ms}`;
+}
 function ttsLog(msg, data) {
   const entry = { t: Date.now(), msg, data };
   TTS_LOG.push(entry);
   if (TTS_LOG.length > 200) TTS_LOG.shift();
-  console.log(`[TTS ${new Date().toISOString().substr(11,12)}] ${msg}`, data !== undefined ? data : '');
+  console.log(`[TTS ${_fmtTimeIL(entry.t)}] ${msg}`, data !== undefined ? data : '');
 }
 window.ttsDump = () => {
   console.table(TTS_LOG.map(e => ({
-    time: new Date(e.t).toISOString().substr(11,12),
+    time: _fmtTimeIL(e.t),
     msg: e.msg,
     data: JSON.stringify(e.data||'').slice(0,80)
   })));
@@ -5456,7 +5468,7 @@ function saveTTSLogs() {
   const meta = 'voice=' + (selectedVoiceName||'none') + '  ttsOn=' + ttsOn + '  _ttsSeq=' + _ttsSeq;
 
   const clientLines = TTS_LOG.map(e => {
-    const time = new Date(e.t).toISOString().substr(11, 12);
+    const time = _fmtTimeIL(e.t);
     const data = e.data !== undefined ? '  →  ' + JSON.stringify(e.data) : '';
     return `[${time}] [client] ${e.msg}${data}`;
   });
@@ -5467,7 +5479,7 @@ function saveTTSLogs() {
     const serverLines = (Array.isArray(serverLogs) ? serverLogs : [])
       .filter(e => !e.ts || new Date(e.ts).getTime() > cutoff)
       .map(e => {
-        const time = new Date(e.ts).toISOString().substr(11, 12);
+        const time = _fmtTimeIL(e.ts);
         return `[${time}] [server] ${e.emoji||''} ${e.msg||''}`;
       });
     const allLines = [
