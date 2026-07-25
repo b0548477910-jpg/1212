@@ -5473,13 +5473,15 @@ function saveTTSLogs() {
     return `[${time}] [client] ${e.msg}${data}`;
   });
 
-  fetch('/logs').then(r => r.json()).then(serverLogs => {
+  fetch('/logs?limit=1000').then(r => r.json()).then(resp => {
     // סנן רק לוגים מהסשן הנוכחי (שעה אחרונה)
+    // הערה: /logs מחזיר {ok, count, logs}, וכל רשומה משתמשת בשדה t (לא ts)
     const cutoff = Date.now() - 3600000;
-    const serverLines = (Array.isArray(serverLogs) ? serverLogs : [])
-      .filter(e => !e.ts || new Date(e.ts).getTime() > cutoff)
+    const rawLogs = Array.isArray(resp) ? resp : (Array.isArray(resp && resp.logs) ? resp.logs : []);
+    const serverLines = rawLogs
+      .filter(e => !e.t || new Date(e.t).getTime() > cutoff)
       .map(e => {
-        const time = _fmtTimeIL(e.ts);
+        const time = _fmtTimeIL(e.t);
         return `[${time}] [server] ${e.emoji||''} ${e.msg||''}`;
       });
     const allLines = [
