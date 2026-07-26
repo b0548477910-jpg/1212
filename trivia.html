@@ -702,6 +702,15 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
         <div id="gw-rooms-list" style="font-size:0.82rem;color:var(--muted);text-align:right;"></div>
       </div>
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:8px;text-align:right;">תיעודים</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="saveTTSLogs()" title="הורד לוגים">📋 לוגים</button>
+          <button class="btn btn-ghost" onclick="downloadVisitors()" title="מי נכנס לקישור">👁️ מבקרים</button>
+          <button class="btn btn-ghost" onclick="downloadCalls()" title="מי התקשר למספר">📞 שיחות</button>
+          <button class="btn btn-ghost" onclick="window.open('/admin-log?key='+encodeURIComponent(ADMIN_KEY),'_blank')" title="תיעודים חיים — מי מחובר עכשיו" style="background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)">🟢 חי</button>
+        </div>
+      </div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
         <button class="btn btn-ghost" style="width:100%;" onclick="changeAdminPassword()">🔑 שינוי סיסמת ניהול</button>
       </div>
     </div>
@@ -969,12 +978,6 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
       <button class="btn btn-ghost btn-sm" onclick="showPhonesPanel()">📱 טלפונים</button>
       <button class="btn btn-ghost btn-sm" onclick="showRoomBuilder()" id="btn-room-builder"
         style="color:var(--gold);border-color:rgba(245,200,66,0.4);">🏠 בנה חדר</button>
-      <div style="width:1px;height:20px;background:var(--border);"></div>
-      <button class="btn btn-ghost btn-sm" onclick="saveTTSLogs()" title="הורד לוגים">📋 לוגים</button>
-      <button class="btn btn-ghost btn-sm" onclick="downloadVisitors()" title="מי נכנס לקישור">👁️ מבקרים</button>
-      <button class="btn btn-ghost btn-sm" onclick="downloadCalls()" title="מי התקשר למספר">📞 שיחות</button>
-      <button class="btn btn-ghost btn-sm" onclick="window.open('/admin-log?key='+encodeURIComponent(ADMIN_KEY),'_blank')" title="תיעודים חיים — מי מחובר עכשיו" style="background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)">🟢 חי</button>
-      <button class="btn btn-ghost btn-sm" onclick="changeAdminPassword()" title="שינוי סיסמת ניהול">🔑 סיסמה</button>
       <span style="color:var(--muted);font-size:0.9rem;align-self:center">👥 <span id="st-p">0</span> · <span id="st-s">לובי</span></span>
     </div>
     <!-- Settings bar -->
