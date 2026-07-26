@@ -701,6 +701,9 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
         <div style="font-size:0.85rem;font-weight:600;color:var(--muted);margin-bottom:8px;text-align:right;">חדרים קיימים</div>
         <div id="gw-rooms-list" style="font-size:0.82rem;color:var(--muted);text-align:right;"></div>
       </div>
+      <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+        <button class="btn btn-ghost" style="width:100%;" onclick="changeAdminPassword()">🔑 שינוי סיסמת ניהול</button>
+      </div>
     </div>
   </div>
 
@@ -1417,6 +1420,9 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
         <button class="sbtn" id="btn-sfx" onclick="toggleSfx()" title="צלילים">🔊</button>
         <button class="sbtn" id="btn-tts-game" onclick="toggleTTSGame()" title="הקראה">📢</button>
         <button class="sbtn" onclick="saveTTSLogs()" title="הורד לוגים">📋</button>
+        <button class="sbtn" onclick="downloadVisitors()" title="מי נכנס לקישור">👁️</button>
+        <button class="sbtn" onclick="downloadCalls()" title="מי התקשר למספר">📞</button>
+        <button class="sbtn" onclick="window.open('/admin-log?key='+encodeURIComponent(ADMIN_KEY),'_blank')" title="תיעודים חיים — מי מחובר עכשיו" style="background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)">🟢</button>
         <button class="sbtn" onclick="toggleFullscreen()" title="מסך מלא" id="btn-fullscreen">⛶</button>
         <button class="sbtn" onclick="goAdmin()" title="ניהול">⚙️</button>
       </div>
@@ -1758,6 +1764,9 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </div>
 
 <script>
+// ✅ סיסמת המנהל — ניתנת לשינוי (ראה changeAdminPassword() ו-/change-admin-key בשרת).
+// נטענת מ-localStorage כדי לשרוד רענון דף; ברירת המחדל תואמת את ברירת המחדל בשרת.
+let ADMIN_KEY = localStorage.getItem('trivia_admin_key') || '345345';
 // ========== AUDIO ==========
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
@@ -2698,7 +2707,7 @@ function updateRoomCtrlGate() {
 }
 function gameCtrlQS(extra) {
   const parts = gwIsAdmin
-    ? ['key=' + encodeURIComponent('345345')]
+    ? ['key=' + encodeURIComponent(ADMIN_KEY)]
     : ['roomId=' + encodeURIComponent(gwRoomId || ''), 'password=' + encodeURIComponent(gwRoomPassword || '')];
   if (extra) parts.push(extra);
   return '?' + parts.join('&');
@@ -2792,6 +2801,30 @@ function gwShowPanel(panel) {
   if (re) re.textContent = '';
 }
 
+// שינוי סיסמת המנהל — מבקש סיסמה נוכחית + חדשה, ומעדכן ADMIN_KEY מקומית בהצלחה
+async function changeAdminPassword() {
+  const currentKey = prompt('הזן את סיסמת הניהול הנוכחית:');
+  if (currentKey === null) return; // ביטול
+  const newKey = prompt('הזן סיסמת ניהול חדשה (לפחות 4 תווים):');
+  if (newKey === null) return; // ביטול
+  if (!newKey || newKey.trim().length < 4) { alert('הסיסמה החדשה חייבת להכיל לפחות 4 תווים'); return; }
+  const confirmKey = prompt('הקלד שוב את הסיסמה החדשה לאימות:');
+  if (confirmKey !== newKey) { alert('הסיסמאות לא תואמות — בטל ונסה שוב'); return; }
+  try {
+    const r = await fetch('/change-admin-key', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentKey, newKey: newKey.trim() })
+    });
+    const d = await r.json();
+    if (!d.ok) { alert('שגיאה: ' + (d.error || 'לא ניתן לשנות את הסיסמה')); return; }
+    ADMIN_KEY = newKey.trim();
+    localStorage.setItem('trivia_admin_key', ADMIN_KEY);
+    alert('✅ סיסמת הניהול שונתה בהצלחה. שמור אותה במקום בטוח — תזדקק לה בכניסה הבאה.');
+  } catch (e) {
+    alert('שגיאת רשת — נסה שוב');
+  }
+}
+
 // משחק מהיר הוסר — נשארו רק 2 לחצנים: ניהול וכניסה לחדר
 // כניסת מנהל — רק סיסמה, ללא שם חדר
 async function gwAdminLogin() {
@@ -2807,6 +2840,8 @@ async function gwAdminLogin() {
     const d = await r.json();
     if (!d.ok) { if (errEl) errEl.textContent = d.error || 'סיסמה שגויה'; return; }
     if (!d.isAdmin) { if (errEl) errEl.textContent = 'זו אינה סיסמת מנהל'; return; }
+    ADMIN_KEY = password; // מעכשיו כל פעולת מנהל תשתמש בסיסמה שהוזנה בפועל (תומך בשינוי סיסמה)
+    localStorage.setItem('trivia_admin_key', password);
     gwRoomId = d.roomId;
     gwIsAdmin = true;
     gwSaveState({ screen: 'mode' });
@@ -2930,7 +2965,7 @@ async function gwCreateRoom() {
   try {
     const r = await fetch('/create-room', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roomId, password, creatorPassword: '345345', expiresInDays, maxPlayers, note })
+      body: JSON.stringify({ roomId, password, creatorPassword: ADMIN_KEY, expiresInDays, maxPlayers, note })
     });
     const d = await r.json();
     if (msgEl) {
@@ -2951,7 +2986,7 @@ async function gwLoadRoomsList() {
   const el = document.getElementById('gw-rooms-list');
   if (!el) return;
   try {
-    const r = await fetch('/rooms?key=345345');
+    const r = await fetch('/rooms?key=' + encodeURIComponent(ADMIN_KEY));
     const rooms = await r.json();
     if (!rooms.length) { el.textContent = 'אין חדרים עדיין'; return; }
     const now = new Date();
@@ -2984,7 +3019,7 @@ async function gwLoadRoomsList() {
 async function gwToggleRoomDisabled(id, disabled) {
   await fetch(`/room-meta/${encodeURIComponent(id)}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: '345345', disabled })
+    body: JSON.stringify({ key: ADMIN_KEY, disabled })
   });
   gwLoadRoomsList();
 }
@@ -2996,14 +3031,14 @@ async function gwExtendRoom(id) {
   if (isNaN(n) || n < 0) { alert('מספר לא תקין'); return; }
   await fetch(`/room-meta/${encodeURIComponent(id)}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: '345345', expiresInDays: n })
+    body: JSON.stringify({ key: ADMIN_KEY, expiresInDays: n })
   });
   gwLoadRoomsList();
 }
 
 async function gwDeleteRoom(id) {
   if (!confirm(`למחוק את חדר "${id}"?`)) return;
-  await fetch(`/rooms/${encodeURIComponent(id)}?key=345345`, { method: 'DELETE' });
+  await fetch(`/rooms/${encodeURIComponent(id)}?key=${encodeURIComponent(ADMIN_KEY)}`, { method: 'DELETE' });
   gwLoadRoomsList();
 }
 
@@ -3023,7 +3058,7 @@ async function gwFetchRoomData() {
 // הוסף שאלות מהמאגר לחדר (יקרא משלב 5)
 async function gwAddFromPool(questions) {
   if (!gwRoomId || !questions?.length) return { ok: false };
-  const authPayload = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/add-from-pool`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3038,7 +3073,7 @@ async function gwAddFromPool(questions) {
 // הוסף שאלה ידנית לחדר (יקרא משלב 6)
 async function gwAddCustomQuestion(q, a, correct, topic) {
   if (!gwRoomId) return { ok: false };
-  const authPayload2 = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload2 = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/add-custom`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3053,7 +3088,7 @@ async function gwAddCustomQuestion(q, a, correct, topic) {
 // מחק שאלה מהחדר
 async function gwDeleteRoomQuestion(idx) {
   if (!gwRoomId) return;
-  const authPayload3 = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload3 = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/question/${idx}`, {
     method: 'DELETE', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(authPayload3)
@@ -3175,7 +3210,7 @@ function rbSetCat(cat) {
 async function rbAddCatToRoom(cat) {
   const toAdd = rbAllPool.filter(q => q.topic === cat);
   if (!toAdd.length) { showToast('אין שאלות בקטגוריה זו'); return; }
-  const authPayload = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/add-from-pool`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3277,7 +3312,7 @@ async function rbAddAllToRoom() {
   if (!confirm('להוסיף את כל הקטגוריות (' + allCats.length + ' קטגוריות, ' + rbAllPool.length + ' שאלות) לחדר?')) return;
   const btn = document.querySelector('#room-builder-overlay button[onclick="rbAddAllToRoom()"]');
   if (btn) { btn.textContent = '⏳ מוסיף...'; btn.disabled = true; }
-  const authPayload = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     for (const cat of allCats) {
       const toAdd = rbAllPool.filter(q => q.topic === cat);
@@ -3302,7 +3337,7 @@ async function rbClearRoom() {
   if (!confirm('לנקות את כל השאלות בחדר?')) return;
   await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/questions`, {
     method: 'DELETE', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: '345345' }) // רק מנהל יכול — כבר בדקנו למעלה
+    body: JSON.stringify({ key: ADMIN_KEY }) // רק מנהל יכול — כבר בדקנו למעלה
   });
   gwRoomData = null;
   rbSelected.clear();
@@ -3454,7 +3489,7 @@ function deleteQ(idx) {
   fetch('/questions/'+idx, {
     method:'DELETE',
     headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ key: '345345' })
+    body: JSON.stringify({ key: ADMIN_KEY })
   }).then(r=>r.json()).then(d=>{
     if (d.ok === false) { showToast('❌ ' + (d.error || 'אין הרשאה')); return; }
     showToast('🗑️ נמחק'); showQEditor();
@@ -3620,7 +3655,7 @@ async function rsSaveActiveCats() {
   if (!el) return;
   const activeCats = [...el.querySelectorAll('button[data-active="1"]')].map(b => b.dataset.cat);
   const msgEl = document.getElementById('rs-cat-msg');
-  const authPayload = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/active-categories`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3687,7 +3722,7 @@ async function rbLoadRoomCats() {
 async function rbDeleteCat(encodedCat) {
   const cat = decodeURIComponent(encodedCat);
   if (!confirm('למחוק את כל שאלות הקטגוריה "' + cat + '" מהחדר?\nהמאגר הכללי לא יושפע.')) return;
-  const authPayload = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch('/room-data/' + encodeURIComponent(gwRoomId) + '/category/' + encodeURIComponent(cat), {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
@@ -3707,7 +3742,7 @@ async function rbDeleteCat(encodedCat) {
 
 async function rbResetRoom() {
   if (!confirm('\u05dc\u05d0\u05e4\u05e1 \u05d0\u05ea \u05d4\u05d7\u05d3\u05e8 \u05dc\u05d2\u05de\u05e8\u05d9?\n\u05db\u05dc \u05d4\u05e9\u05d0\u05dc\u05d5\u05ea \u05d9\u05d9\u05de\u05d7\u05e7\u05d5 \u05de\u05d4\u05d7\u05d3\u05e8 \u2014 \u05d4\u05de\u05d0\u05d2\u05e8 \u05d4\u05db\u05dc\u05dc\u05d9 \u05dc\u05d0 \u05d9\u05d5\u05e9\u05e4\u05e2.')) return;
-  const authPayload = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const authPayload = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     await fetch('/room-data/' + encodeURIComponent(gwRoomId) + '/questions', {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
@@ -5014,7 +5049,7 @@ function startGame(){
   // אם יש חדר פעיל — שלח את ה-roomId לשרת כדי לשחק מהחדר
   if (gwRoomId) params.set('roomId', gwRoomId);
   // ✅ נדרש עכשיו: הרשאה (מפתח מנהל או roomId+סיסמה) — /start כבר לא פתוח לכולם
-  if (gwIsAdmin) params.set('key', '345345');
+  if (gwIsAdmin) params.set('key', ADMIN_KEY);
   else if (gwRoomId) params.set('password', gwRoomPassword || '');
   fetch('/start?' + params.toString());
   getAC();
@@ -5499,6 +5534,23 @@ function saveTTSLogs() {
   });
 }
 
+// מוריד קובץ TXT עם רשימת כל מי שהתקשר למספר הטלפון של המשחק — מספר, שם (אם ידוע),
+// שעת התחברות, ומשך השיחה בפועל. מסודר מהחיבור האחרון לישן ביותר (כפי שהשרת כבר ממיין).
+function downloadCalls() {
+  fetch('/calls?key=' + encodeURIComponent(ADMIN_KEY)).then(r => r.json()).then(resp => {
+    if (!resp.ok) { alert('שגיאה בשליפת רשימת השיחות'); return; }
+    const fmtDur = sec => {
+      const m = Math.floor(sec / 60), s = sec % 60;
+      return m > 0 ? `${m}:${String(s).padStart(2,'0')} דק'` : `${s} שנ'`;
+    };
+    const lines = resp.calls.map(c =>
+      `[${_fmtTimeIL(new Date(c.start))}]  טלפון: ${c.phone}  שם: ${c.name || '(לא ידוע)'}  משך שיחה: ${fmtDur(c.durationSec)}`);
+    const header = `=== שיחות למספר הטלפון של המשחק — סה"כ ${resp.count} שיחות (עדכני ל-${new Date().toLocaleString('he-IL')}) ===\n`;
+    _downloadText(header + '\n' + lines.join('\n'),
+      'trivia-calls-' + new Date().toISOString().substr(0,19).replace(/:/g,'-') + '.txt');
+  }).catch(() => alert('שגיאה בשליפת רשימת השיחות'));
+}
+
 function _downloadText(text, filename) {
   const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const a = document.createElement('a');
@@ -5506,6 +5558,17 @@ function _downloadText(text, filename) {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+// מוריד קובץ TXT עם רשימת כל מי שנכנס לקישור המשחק (IP + שעה בשעון ישראל + דפדפן)
+function downloadVisitors() {
+  fetch('/visitors?key=' + encodeURIComponent(ADMIN_KEY)).then(r => r.json()).then(resp => {
+    if (!resp.ok) { alert('שגיאה בשליפת רשימת המבקרים'); return; }
+    const lines = resp.visitors.map(v => `[${_fmtTimeIL(new Date(v.t))}]  IP: ${v.ip}  ${v.ua || ''}`);
+    const header = `=== מבקרים שנכנסו לקישור המשחק — סה"כ ${resp.count} כניסות (עדכני ל-${new Date().toLocaleString('he-IL')}) ===\n`;
+    _downloadText(header + '\n' + lines.join('\n'),
+      'trivia-visitors-' + new Date().toISOString().substr(0,19).replace(/:/g,'-') + '.txt');
+  }).catch(() => alert('שגיאה בשליפת רשימת המבקרים'));
 }
 
 function cancelAllSpeech() {
@@ -6124,7 +6187,7 @@ function saveQEdit() {
     // הוספת שאלה חדשה — רק מנהל
     fetch('/add-question', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({q,a,correct,topic, key:'345345'})
+      body: JSON.stringify({q,a,correct,topic, key:ADMIN_KEY})
     }).then(r=>r.json()).then(d=>{
       if (d.ok === false) { showToast('❌ ' + (d.error || 'שגיאה')); return; }
       showToast('✅ שאלה נוספה!'); closeQSingle();
@@ -6134,7 +6197,7 @@ function saveQEdit() {
     // עריכת שאלה קיימת — שולח key כי השרת עכשיו מוגן
     fetch('/questions/'+qeEditIdx, {
       method:'PUT', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({q,a,correct,topic, key:'345345'})
+      body: JSON.stringify({q,a,correct,topic, key:ADMIN_KEY})
     }).then(r=>r.json()).then(d=>{
       if (d.ok === false) { showToast('❌ ' + (d.error || 'אין הרשאה לעריכת מאגר')); return; }
       showToast('✅ שאלה עודכנה'); closeQSingle(); showQEditor();
@@ -6771,7 +6834,7 @@ function setQuestionCount() {
   const inp = document.getElementById('q-count-inp') || document.getElementById('rs-q-count-inp');
   const val = parseInt(inp.value);
   if (isNaN(val) || val < 1 || val > 50) { showToast('❌ הכנס מספר בין 1 ל-50'); return; }
-  const auth = gwIsAdmin ? { key: '345345' } : { roomId: gwRoomId, password: gwRoomPassword };
+  const auth = gwIsAdmin ? { key: ADMIN_KEY } : { roomId: gwRoomId, password: gwRoomPassword };
   fetch('/set-question-count', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ count: val, ...auth })
@@ -6903,7 +6966,7 @@ function saveSettingToServer(key, value) {
   try { localStorage.setItem(key, strVal); } catch {} // גיבוי מקומי בלבד, לא נקרא בעדיפות
   const body = {}; body[key] = strVal;
   if (typeof gwRoomId !== 'undefined' && gwRoomId && ROOM_SCOPED_SETTING_KEYS.includes(key)) {
-    const auth = (typeof gwIsAdmin !== 'undefined' && gwIsAdmin) ? { key: '345345' } : { password: gwRoomPassword };
+    const auth = (typeof gwIsAdmin !== 'undefined' && gwIsAdmin) ? { key: ADMIN_KEY } : { password: gwRoomPassword };
     fetch(`/room-data/${encodeURIComponent(gwRoomId)}/settings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -8393,7 +8456,7 @@ function ppRenderList() {
   list.innerHTML = html || '<div style="text-align:center;color:var(--muted);padding:20px;">אין משפטים</div>';
 }
 async function ppTogglePhrase(index, disabled) {
-  const auth = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const auth = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/phrase-toggle`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -8407,7 +8470,7 @@ async function ppAddPhrase() {
   const text = (input.value || '').trim();
   if (!text) return;
   if (!text.includes('{name}')) { alert('המשפט חייב להכיל {name}'); return; }
-  const auth = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const auth = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/phrase-add`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -8420,7 +8483,7 @@ async function ppAddPhrase() {
   } catch { alert('שגיאה בהוספה'); }
 }
 async function ppDeletePhrase(idx) {
-  const auth = gwIsAdmin ? { key: '345345' } : { password: gwRoomPassword };
+  const auth = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/phrase/${ppTab}/${idx}`, {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
