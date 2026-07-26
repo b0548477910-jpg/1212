@@ -1526,8 +1526,14 @@ app.delete('/questions/:idx', (req, res) => {
   res.json({ ok: true });
 });
 
+// מזהה בוטים/פינגים אוטומטיים (health-check services, monitoring, HTTP client libraries) —
+// כדי שרשימת "מי נכנס לקישור" תציג רק בני אדם אמיתיים, לא רעש טכני.
+const _BOT_UA_RE = /bot|crawl|spider|monitor|uptimerobot|pingdom|go-http-client|curl|wget|python-requests|node-fetch|axios|render/i;
+function _isLikelyBot(ua) { return !ua || _BOT_UA_RE.test(ua); }
+
 app.get('/', (req, res) => {
-  logVisit(_getVisitorIp(req), req.headers['user-agent']);
+  const ua = req.headers['user-agent'];
+  if (!_isLikelyBot(ua)) logVisit(_getVisitorIp(req), ua);
   const file = path.join(__dirname, 'trivia.html');
   if (fs.existsSync(file)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.send(fs.readFileSync(file)); }
   else res.status(404).send('not found');
