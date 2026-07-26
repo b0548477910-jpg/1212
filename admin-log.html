@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>תיעודים — טריוויה</title>
+<style>
+  :root {
+    --bg:#07071a;--s1:#0f0f22;--s2:#161630;
+    --gold:#f5c842;--green:#22c55e;--red:#ef4444;
+    --text:#f0f0ff;--muted:#8080b0;--border:rgba(255,255,255,0.08);
+  }
+  * { box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text); font-family:'Rubik',Arial,sans-serif;
+    margin:0; padding:20px; min-height:100vh;
+  }
+  h1 { font-size:1.4rem; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:0.85rem; margin-bottom:20px; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+  .card {
+    background:var(--s1); border:1px solid var(--border); border-radius:14px;
+    padding:16px 18px; margin-bottom:18px;
+  }
+  .card h2 { font-size:1.05rem; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--green); display:inline-block; box-shadow:0 0 8px var(--green); animation:pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+  th, td { text-align:right; padding:7px 10px; border-bottom:1px solid var(--border); }
+  th { color:var(--muted); font-weight:600; font-size:0.78rem; }
+  tr:last-child td { border-bottom:none; }
+  .empty { color:var(--muted); text-align:center; padding:18px; font-size:0.85rem; }
+  .btn {
+    background:var(--s2); color:var(--text); border:1px solid var(--border); border-radius:9px;
+    padding:8px 14px; font-size:0.85rem; cursor:pointer; font-family:inherit;
+  }
+  .btn:hover { border-color:var(--gold); }
+  .live-badge {
+    background:rgba(34,197,94,0.15); color:var(--green); border:1px solid var(--green);
+    border-radius:20px; padding:2px 10px; font-size:0.75rem; font-weight:600;
+  }
+  .count-badge { background:var(--s2); color:var(--muted); border-radius:20px; padding:2px 10px; font-size:0.75rem; }
+  .scroll { max-height:340px; overflow-y:auto; }
+  #keyGate { text-align:center; padding-top:80px; }
+  #keyGate input { padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:var(--s2); color:var(--text); font-family:inherit; }
+</style>
+</head>
+<body>
+
+<div id="keyGate" style="display:none">
+  <h1>נדרשת סיסמת מנהל</h1>
+  <input type="password" id="keyInput" placeholder="סיסמה">
+  <button class="btn" onclick="_saveKeyAndLoad()">כניסה</button>
+</div>
+
+<div id="main" style="display:none">
+  <div class="topbar">
+    <div>
+      <h1>📋 תיעודים — מי מחובר, מי נכנס, מי התקשר</h1>
+      <div class="sub">מתעדכן אוטומטית כל 2 שניות</div>
+    </div>
+    <button class="btn" onclick="location.href='/'">⬅ חזרה למשחק</button>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span> מחוברים כרגע <span id="liveCount" class="live-badge">0</span></h2>
+    <div class="scroll">
+      <table id="liveTable">
+        <thead><tr><th>שם</th><th>טלפון</th><th>מחובר כבר</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="liveEmpty" class="empty">אין כרגע אף אחד מחובר</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📞 היסטוריית שיחות <span id="callsCount" class="count-badge">0</span></h2>
+    <div style="margin-bottom:10px"><button class="btn" onclick="downloadCallsFile()">⬇ הורד TXT</button></div>
+    <div class="scroll">
+      <table id="callsTable">
+        <thead><tr><th>שעה</th><th>טלפון</th><th>שם</th><th>משך שיחה</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="callsEmpty" class="empty">אין עדיין היסטוריית שיחות</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>👁️ היסטוריית כניסות לקישור <span id="visitorsCount" class="count-badge">0</span></h2>
+    <div style="margin-bottom:10px"><button class="btn" onclick="downloadVisitorsFile()">⬇ הורד TXT</button></div>
+    <div class="scroll">
+      <table id="visitorsTable">
+        <thead><tr><th>שעה</th><th>IP</th><th>דפדפן</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="visitorsEmpty" class="empty">אין עדיין היסטוריית כניסות</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// שעה בשעון ישראל, אותה שיטה כמו ב-trivia.html
+function _fmtTimeIL(tsOrDate) {
+  const d = (tsOrDate instanceof Date) ? tsOrDate : new Date(tsOrDate);
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem', hour12: false,
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  }).formatToParts(d);
+  const get = t => parts.find(p => p.type === t).value;
+  return `${get('hour')}:${get('minute')}:${get('second')}`;
+}
+function _fmtDur(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2,'0')} דק'` : `${s} שנ'`;
+}
+function _downloadText(text, filename) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+let ADMIN_KEY = new URLSearchParams(location.search).get('key') || localStorage.getItem('trivia_admin_key') || '';
+
+function _saveKeyAndLoad() {
+  ADMIN_KEY = document.getElementById('keyInput').value;
+  localStorage.setItem('trivia_admin_key', ADMIN_KEY);
+  document.getElementById('keyGate').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  loadAll();
+}
+
+let lastCalls = [], lastVisitors = [];
+
+async function loadLive() {
+  try {
+    const r = await fetch('/live-calls?key=' + encodeURIComponent(ADMIN_KEY));
+    const resp = await r.json();
+    if (!resp.ok) return _showGate();
+    document.getElementById('liveCount').textContent = resp.count;
+    const tbody = document.querySelector('#liveTable tbody');
+    tbody.innerHTML = '';
+    document.getElementById('liveEmpty').style.display = resp.count ? 'none' : 'block';
+    resp.live.forEach(p => {
+      const tr = document.createElement('tr');
+      const elapsedSec = Math.round((Date.now() - p.connectedAt) / 1000);
+      tr.innerHTML = `<td>${p.name || '—'}</td><td>${p.phone}</td><td>${_fmtDur(elapsedSec)}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (e) { /* אל תפיל את הדף אם יש נפילת רשת רגעית */ }
+}
+
+async function loadCalls() {
+  try {
+    const r = await fetch('/calls?key=' + encodeURIComponent(ADMIN_KEY));
+    const resp = await r.json();
+    if (!resp.ok) return _showGate();
+    lastCalls = resp.calls;
+    document.getElementById('callsCount').textContent = resp.count;
+    const tbody = document.querySelector('#callsTable tbody');
+    tbody.innerHTML = '';
+    document.getElementById('callsEmpty').style.display = resp.count ? 'none' : 'block';
+    resp.calls.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${_fmtTimeIL(new Date(c.start))}</td><td>${c.phone}</td><td>${c.name || '(לא ידוע)'}</td><td>${_fmtDur(c.durationSec)}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (e) {}
+}
+
+async function loadVisitors() {
+  try {
+    const r = await fetch('/visitors?key=' + encodeURIComponent(ADMIN_KEY));
+    const resp = await r.json();
+    if (!resp.ok) return _showGate();
+    lastVisitors = resp.visitors;
+    document.getElementById('visitorsCount').textContent = resp.count;
+    const tbody = document.querySelector('#visitorsTable tbody');
+    tbody.innerHTML = '';
+    document.getElementById('visitorsEmpty').style.display = resp.count ? 'none' : 'block';
+    resp.visitors.forEach(v => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${_fmtTimeIL(new Date(v.t))}</td><td>${v.ip}</td><td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.ua || ''}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (e) {}
+}
+
+function downloadCallsFile() {
+  const lines = lastCalls.map(c => `[${_fmtTimeIL(new Date(c.start))}]  טלפון: ${c.phone}  שם: ${c.name || '(לא ידוע)'}  משך שיחה: ${_fmtDur(c.durationSec)}`);
+  _downloadText(`=== שיחות למספר הטלפון של המשחק — סה"כ ${lastCalls.length} שיחות ===\n\n` + lines.join('\n'),
+    'trivia-calls-' + new Date().toISOString().substr(0,19).replace(/:/g,'-') + '.txt');
+}
+function downloadVisitorsFile() {
+  const lines = lastVisitors.map(v => `[${_fmtTimeIL(new Date(v.t))}]  IP: ${v.ip}  ${v.ua || ''}`);
+  _downloadText(`=== מבקרים שנכנסו לקישור המשחק — סה"כ ${lastVisitors.length} כניסות ===\n\n` + lines.join('\n'),
+    'trivia-visitors-' + new Date().toISOString().substr(0,19).replace(/:/g,'-') + '.txt');
+}
+
+function _showGate() {
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('keyGate').style.display = 'block';
+}
+
+function loadAll() { loadLive(); loadCalls(); loadVisitors(); }
+
+if (!ADMIN_KEY) {
+  _showGate();
+} else {
+  document.getElementById('main').style.display = 'block';
+  loadAll();
+}
+
+setInterval(loadLive, 2000);   // מחוברים כרגע — ריענון תכוף
+setInterval(loadCalls, 15000); // היסטוריה — ריענון פחות תכוף
+setInterval(loadVisitors, 15000);
+</script>
+</body>
+</html>
