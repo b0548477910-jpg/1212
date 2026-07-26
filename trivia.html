@@ -969,6 +969,12 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
       <button class="btn btn-ghost btn-sm" onclick="showPhonesPanel()">📱 טלפונים</button>
       <button class="btn btn-ghost btn-sm" onclick="showRoomBuilder()" id="btn-room-builder"
         style="color:var(--gold);border-color:rgba(245,200,66,0.4);">🏠 בנה חדר</button>
+      <div style="width:1px;height:20px;background:var(--border);"></div>
+      <button class="btn btn-ghost btn-sm" onclick="saveTTSLogs()" title="הורד לוגים">📋 לוגים</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadVisitors()" title="מי נכנס לקישור">👁️ מבקרים</button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadCalls()" title="מי התקשר למספר">📞 שיחות</button>
+      <button class="btn btn-ghost btn-sm" onclick="window.open('/admin-log?key='+encodeURIComponent(ADMIN_KEY),'_blank')" title="תיעודים חיים — מי מחובר עכשיו" style="background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)">🟢 חי</button>
+      <button class="btn btn-ghost btn-sm" onclick="changeAdminPassword()" title="שינוי סיסמת ניהול">🔑 סיסמה</button>
       <span style="color:var(--muted);font-size:0.9rem;align-self:center">👥 <span id="st-p">0</span> · <span id="st-s">לובי</span></span>
     </div>
     <!-- Settings bar -->
@@ -1419,10 +1425,6 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
         </select>
         <button class="sbtn" id="btn-sfx" onclick="toggleSfx()" title="צלילים">🔊</button>
         <button class="sbtn" id="btn-tts-game" onclick="toggleTTSGame()" title="הקראה">📢</button>
-        <button class="sbtn" onclick="saveTTSLogs()" title="הורד לוגים">📋</button>
-        <button class="sbtn" onclick="downloadVisitors()" title="מי נכנס לקישור">👁️</button>
-        <button class="sbtn" onclick="downloadCalls()" title="מי התקשר למספר">📞</button>
-        <button class="sbtn" onclick="window.open('/admin-log?key='+encodeURIComponent(ADMIN_KEY),'_blank')" title="תיעודים חיים — מי מחובר עכשיו" style="background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)">🟢</button>
         <button class="sbtn" onclick="toggleFullscreen()" title="מסך מלא" id="btn-fullscreen">⛶</button>
         <button class="sbtn" onclick="goAdmin()" title="ניהול">⚙️</button>
       </div>
