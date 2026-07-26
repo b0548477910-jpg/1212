@@ -17,6 +17,7 @@ RUN pip3 install --no-cache-dir --break-system-packages edge-tts
 WORKDIR /app
 COPY server.js .
 COPY trivia.html .
+COPY admin-log.html .
 COPY questions.json .
 
 RUN npm init -y && npm install express yemot-router2 ioredis
