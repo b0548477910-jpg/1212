@@ -59,7 +59,7 @@ async function hydrateAllFromRedis() {
     console.error('[Redis] לא ניתן להתחבר, ממשיכים בלי hydrate:', e.message);
     return;
   }
-  const singleFiles = [NAMES_FILE, QUESTIONS_FILE, ROOMS_FILE, SETTINGS_FILE, ASKED_FILE, FAMILY_FILE, FAMILY_SETS_FILE];
+  const singleFiles = [NAMES_FILE, QUESTIONS_FILE, ROOMS_FILE, SETTINGS_FILE, ASKED_FILE, FAMILY_FILE, FAMILY_SETS_FILE, ADMIN_KEY_FILE];
   for (const fp of singleFiles) await _hydrateOneFile(fp);
   // קבצי החדרים הבודדים (אחד לכל חדר) — נשמרים במפתחות עם קידומת נפרדת
   try {
@@ -213,7 +213,28 @@ const ZINGER_CHANCE_DEFAULT = 0.35; // ✅ ברירת מחדל אם לא נבח�
 
 
 // ===== GATEWAY — ROOMS & PASSWORDS =====
-const MASTER_KEY = '345345'; // סיסמת על — גישה לכל חדר
+// ✅ MASTER_KEY ניתן לשינוי בזמן ריצה (ראה /change-admin-key למטה) — לכן זה let, לא const.
+// נשמר בקובץ נפרד + ממורר ל-Redis (בדיוק כמו שאר קבצי ה-/app/data) כדי לשרוד deploy חדש —
+// אם לא היינו עושים את זה, סיסמה חדשה הייתה חוזרת ל-'345345' אחרי כל דיפלוי.
+let MASTER_KEY = '345345'; // סיסמת על — גישה לכל חדר (ברירת מחדל, נדרסת ע"י loadMasterKey אם קיים שינוי שמור)
+const ADMIN_KEY_FILE = '/app/data/admin_key.json';
+
+function loadMasterKey() {
+  try {
+    if (fs.existsSync(ADMIN_KEY_FILE)) {
+      const parsed = JSON.parse(fs.readFileSync(ADMIN_KEY_FILE, 'utf8'));
+      if (parsed && parsed.key) MASTER_KEY = parsed.key;
+    }
+  } catch (e) { log('⚠️', 'טעינת סיסמת מנהל שמורה נכשלה: ' + e.message); }
+}
+
+function saveMasterKey(newKey) {
+  MASTER_KEY = newKey;
+  const dir = path.dirname(ADMIN_KEY_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  writeFileMirrored(ADMIN_KEY_FILE, JSON.stringify({ key: newKey }));
+}
+
 const ROOMS_FILE = '/app/data/rooms.json';
 const ROOMS_DIR  = '/app/data/rooms'; // תיקיית קבצי חדרים
 
@@ -385,6 +406,61 @@ function loadRecentLogsFromFile() {
   } catch {}
 }
 loadRecentLogsFromFile();
+
+// ===== תיעוד מבקרים — מי נכנס לקישור, מתי, ומאיזו כתובת IP =====
+// אותו מבנה בדיוק כמו מערכת הלוגים למעלה (ring בזיכרון + קובץ ב-/app/data, לא ב-Redis —
+// כמו logRing, זה נשמר רק כל עוד השרת לא עבר deploy חדש; זה תיעוד תפעולי, לא קריטי לשחזור).
+const VISITORS_FILE = path.join(LOGS_DIR, 'visitors.log');
+const VISITORS_RING_MAX = 5000;
+let visitorRing = []; // {t, ip, ua}
+
+function loadRecentVisitorsFromFile() {
+  try {
+    ensureLogsDir();
+    if (!fs.existsSync(VISITORS_FILE)) return;
+    const lines = fs.readFileSync(VISITORS_FILE, 'utf8').split('\n').filter(Boolean).slice(-VISITORS_RING_MAX);
+    visitorRing = lines.map(line => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
+  } catch {}
+}
+loadRecentVisitorsFromFile();
+
+function logVisit(ip, ua) {
+  const entry = { t: new Date().toISOString(), ip: ip || 'unknown', ua: (ua || '').slice(0, 200) };
+  visitorRing.push(entry);
+  if (visitorRing.length > VISITORS_RING_MAX) visitorRing.shift();
+  try { ensureLogsDir(); fs.appendFileSync(VISITORS_FILE, JSON.stringify(entry) + '\n'); } catch {}
+}
+
+// מחלץ כתובת IP אמיתית של המבקר — Render יושב מאחורי proxy, אז ה-IP האמיתי מגיע
+// ב-x-forwarded-for (הראשון ברשימה = המבקר עצמו), לא ב-connection הישירה.
+function _getVisitorIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return fwd.split(',')[0].trim();
+  return req.socket.remoteAddress || 'unknown';
+}
+
+// ===== תיעוד שיחות טלפון — מי התקשר למספר של המשחק (ימות המשיח), מתי, וכמה זמן =====
+// נרשם רק בסוף השיחה (finally של yemotRouter) — כי משך השיחה נודע רק אז. אותו מבנה
+// שמירה כמו visitorRing (ring בזיכרון + קובץ, לא ממורר ל-Redis — נעלם ב-deploy הבא).
+const CALLS_FILE = path.join(LOGS_DIR, 'calls.log');
+const CALLS_RING_MAX = 5000;
+let callRing = []; // {phone, callId, name, start, end, durationSec}
+
+function loadRecentCallsFromFile() {
+  try {
+    ensureLogsDir();
+    if (!fs.existsSync(CALLS_FILE)) return;
+    const lines = fs.readFileSync(CALLS_FILE, 'utf8').split('\n').filter(Boolean).slice(-CALLS_RING_MAX);
+    callRing = lines.map(line => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
+  } catch {}
+}
+loadRecentCallsFromFile();
+
+function logCallEnd(entry) {
+  callRing.push(entry);
+  if (callRing.length > CALLS_RING_MAX) callRing.shift();
+  try { ensureLogsDir(); fs.appendFileSync(CALLS_FILE, JSON.stringify(entry) + '\n'); } catch {}
+}
 
 function loadNames() {
   try {
@@ -1015,6 +1091,7 @@ const yemotRouter = YemotRouter({ printLog: true });
 yemotRouter.get('/yemot', async (call) => {
   const phone = call.phone;
   const callId = call.callId;
+  const _callStartTime = new Date();
   if (!players[callId]) {
     // מחק שחקן ישן עם אותו מספר טלפון (חיוג מחדש)
     const oldEntry = Object.values(players).find(p => p.phone === phone && p.callId !== callId);
@@ -1035,7 +1112,7 @@ yemotRouter.get('/yemot', async (call) => {
       }
     }
     const colorIdx = Object.keys(players).length % 6;
-    players[callId] = { callId, phone, name, score: 0, correct: 0, answered: false, color: colorIdx, _chosen: null };
+    players[callId] = { callId, phone, name, score: 0, correct: 0, answered: false, color: colorIdx, _chosen: null, connectedAt: Date.now() };
     broadcast({ type: 'playerJoin', player: players[callId] });
     // שמור במאגר הגלובלי רק אם השם לא בא מאנשי קשר של חדר
     const inRoomContacts = activeRoomId && loadRoomData(activeRoomId)?.contacts?.[phone];
@@ -1091,6 +1168,15 @@ await call.read(
   } catch (e) {
     log('📵', `ניתוק: ${players[callId]?.name || phone} — ${e.message}`);
   } finally {
+    const _callEndTime = new Date();
+    logCallEnd({
+      phone,
+      callId,
+      name: players[callId]?.name || getPlayerName(phone) || '',
+      start: _callStartTime.toISOString(),
+      end: _callEndTime.toISOString(),
+      durationSec: Math.round((_callEndTime - _callStartTime) / 1000)
+    });
     if (players[callId]) {
       const name = players[callId].name;
       broadcast({ type: 'playerLeave', callId });
@@ -1100,6 +1186,39 @@ await call.read(
   }
 });
 app.use(yemotRouter);
+
+// רשימת מי שהתקשר למספר של המשחק — מוגן במפתח מנהל בלבד, מסודר מהאחרון לישן ביותר
+app.get('/calls', (req, res) => {
+  if (req.query.key !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'גישה אסורה — נדרשת סיסמת מנהל' });
+  const sorted = callRing.slice().sort((a, b) => new Date(b.start) - new Date(a.start));
+  res.json({ ok: true, count: sorted.length, calls: sorted });
+});
+
+// מי מחובר כרגע בפועל (שיחות פעילות ברגע זה) — לתצוגה חיה בממשק הניהול
+app.get('/live-calls', (req, res) => {
+  if (req.query.key !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'גישה אסורה — נדרשת סיסמת מנהל' });
+  const live = Object.values(players)
+    .map(p => ({ phone: p.phone, name: p.name, callId: p.callId, connectedAt: p.connectedAt || Date.now() }))
+    .sort((a, b) => a.connectedAt - b.connectedAt); // הכי ותיק קודם — נוח לראות מי מחכה הכי הרבה זמן
+  res.json({ ok: true, count: live.length, live });
+});
+
+// דף ניהול תיעודים — מסך חי (מחוברים עכשיו) + היסטוריית כניסות ושיחות
+app.get('/admin-log', (req, res) => {
+  const file = path.join(__dirname, 'admin-log.html');
+  if (fs.existsSync(file)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.send(fs.readFileSync(file)); }
+  else res.status(404).send('not found');
+});
+
+// שינוי סיסמת המנהל — חייבים לספק את הסיסמה הנוכחית כדי לשנות אותה
+app.post('/change-admin-key', (req, res) => {
+  const { currentKey, newKey } = req.body || {};
+  if (currentKey !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'סיסמה נוכחית שגויה' });
+  if (!newKey || String(newKey).trim().length < 4) return res.status(400).json({ ok: false, error: 'הסיסמה החדשה חייבת להכיל לפחות 4 תווים' });
+  saveMasterKey(String(newKey).trim());
+  log('🔑', 'סיסמת מנהל שונתה');
+  res.json({ ok: true });
+});
 
 // ===== ROUTES =====
 app.get('/events', (req, res) => {
@@ -1408,9 +1527,16 @@ app.delete('/questions/:idx', (req, res) => {
 });
 
 app.get('/', (req, res) => {
+  logVisit(_getVisitorIp(req), req.headers['user-agent']);
   const file = path.join(__dirname, 'trivia.html');
   if (fs.existsSync(file)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.send(fs.readFileSync(file)); }
   else res.status(404).send('not found');
+});
+
+// רשימת מי שנכנס לקישור המשחק — מוגן במפתח מנהל בלבד
+app.get('/visitors', (req, res) => {
+  if (req.query.key !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'גישה אסורה — נדרשת סיסמת מנהל' });
+  res.json({ ok: true, count: visitorRing.length, visitors: visitorRing.slice().reverse() }); // חדש קודם
 });
 
 // נתיב קליל לבדיקת "השרת ער" (keep-alive/uptime pinger) — בכוונה לא מחזיר את trivia.html
@@ -2464,6 +2590,7 @@ app.post('/zinger-narrator-done', (req, res) => {
 // כך שהשרת תמיד עולה עם הנתונים האחרונים שנשמרו, גם אחרי deploy על Render free שמוחק דיסק.
 (async () => {
   await hydrateAllFromRedis();
+  loadMasterKey();
   loadAppSettings();
   app.listen(PORT, async () => {
     log('🚀', `שרת רץ על פורט ${PORT}`);
