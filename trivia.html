@@ -3857,7 +3857,7 @@ function selectMode(mode) {
     return;
   }
   // מנהל — ההתנהגות הרגילה
-  if (['reaction','number','wordchain','majority','blitz','whosaid','lightning','price','truefalse','emoji','hotseat','guesssong','whoami','biblechain','whofirst','spinwheel','doubledown','flashback','passnote','pyramid'].includes(mode)) {
+  if (['reaction','number','wordchain','majority','blitz','whosaid','lightning','price','truefalse','emoji','hotseat','guesssong','whoami','biblechain','whofirst','spinwheel','doubledown','flashback','passnote','pyramid','picture'].includes(mode)) {
     goAdmin();
     const ts = document.getElementById('topic-sel');
     if (ts) ts.style.display = 'none';
