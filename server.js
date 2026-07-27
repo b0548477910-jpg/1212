@@ -2816,7 +2816,7 @@ function revealMajority() {
 
 // ===== WHO SAID IT GAME =====
 const WHO_SAID = [
-  {quote:"האדם חופשי להיות מה שהוא רוצה להיות",opts:['בן גוריון','הרצל','ז׳בוטינסקי','ויצמן'],correct:1},
+  {quote:"בראשית ברא אלהים את השמים ואת הארץ",opts:['בראשית','שמות','ויקרא','במדבר'],correct:0},
   {quote:"אם תרצו — אין זו אגדה",opts:['הרצל','בן גוריון','ויצמן','ז׳בוטינסקי'],correct:0},
   {quote:"כל הנשמה תהלל יה",opts:['תהילים','ישעיה','ירמיה','דברים'],correct:0},
   {quote:"לא תרצח, לא תנאף, לא תגנוב",opts:['שמות','ויקרא','דברים','בראשית'],correct:0},
@@ -3301,32 +3301,7 @@ const SONG_ROUNDS = [
   { clue: '🎵 אדון עולם... אשר מלך...', answer: 'אדון עולם', opts: ['אדון עולם', 'יגדל', 'שמע ישראל', 'לכה דודי'], correct: 0, category: 'יהודי' },
   { clue: '🎵 אנא ה\'... הושיעה נא...', answer: 'אנא ה\'', opts: ['הלל', 'אנא ה\'', 'דיינו', 'הודו לה\''], correct: 1, category: 'יהודי' },
 
-  // עולמי / פופ
-  { clue: '🎵 Happy Birthday to You...', answer: 'Happy Birthday', opts: ['Happy Birthday', 'Jingle Bells', 'We Are The World', 'Imagine'], correct: 0, category: 'עולמי' },
-  { clue: '🎵 Jingle bells... jingle bells... jingle all the way!', answer: 'Jingle Bells', opts: ['Silent Night', 'Jingle Bells', 'O Christmas Tree', 'Rudolph'], correct: 1, category: 'עולמי' },
-  { clue: '🎵 Imagine all the people... living life in peace...', answer: 'Imagine - John Lennon', opts: ['Imagine - John Lennon', 'Let It Be', 'Hey Jude', 'Yesterday'], correct: 0, category: 'עולמי' },
-  { clue: '🎵 We are the world... we are the children...', answer: 'We Are The World', opts: ['We Are The World', 'Heal The World', 'Man In The Mirror', 'Earth Song'], correct: 0, category: 'עולמי' },
-  { clue: '🎵 Can you feel the love tonight...', answer: 'Can You Feel The Love Tonight', opts: ['Circle of Life', 'Can You Feel The Love Tonight', 'Hakuna Matata', 'I Just Can\'t Wait'], correct: 1, category: 'עולמי' },
-  { clue: '🎵 Let her go... only miss the sun when it starts to snow...', answer: 'Let Her Go - Passenger', opts: ['Let Her Go - Passenger', 'Stay With Me', 'Chasing Cars', 'Someone Like You'], correct: 0, category: 'עולמי' },
-  { clue: '🎵 Shallow... I\'m off the deep end...', answer: 'Shallow - Lady Gaga', opts: ['A Million Dreams', 'Shallow - Lady Gaga', 'Always Remember Us', 'The Sound of Silence'], correct: 1, category: 'עולמי' },
-
-  // רוק
-  { clue: '🎵 Bohemian Rhapsody... Is this real life? Is this just fantasy?', answer: 'Bohemian Rhapsody', opts: ['Queen Medley', 'Bohemian Rhapsody', 'Stairway to Heaven', 'Hotel California'], correct: 1, category: 'רוק' },
-  { clue: '🎵 We will, we will rock you!', answer: 'We Will Rock You', opts: ['We Are The Champions', 'We Will Rock You', 'Radio Gaga', 'Another One Bites'], correct: 1, category: 'רוק' },
-  { clue: '🎵 Don\'t stop believing... Hold on to the feeling!', answer: 'Don\'t Stop Believin\'', opts: ['Don\'t Stop Me Now', 'Don\'t Stop Believin\'', 'Livin\' on a Prayer', 'Eye of the Tiger'], correct: 1, category: 'רוק' },
-  { clue: '🎵 Eye of the tiger... it\'s the thrill of the fight!', answer: 'Eye of the Tiger', opts: ['Eye of the Tiger', 'Rocky Theme', 'Survivor', 'We Will Rock You'], correct: 0, category: 'רוק' },
-  { clue: '🎵 Livin\' on a prayer... Tommy used to work on the docks...', answer: 'Livin\' on a Prayer', opts: ['Living on a Prayer', 'Livin\' on a Prayer', 'You Give Love a Bad Name', 'Shot Through the Heart'], correct: 1, category: 'רוק' },
-  { clue: '🎵 Smells like teen spirit... Here we are now, entertain us!', answer: 'Smells Like Teen Spirit', opts: ['Come as You Are', 'Smells Like Teen Spirit', 'Heart-Shaped Box', 'All Apologies'], correct: 1, category: 'רוק' },
-  { clue: '🎵 Sweet home Alabama... where the skies are so blue...', answer: 'Sweet Home Alabama', opts: ['Sweet Home Alabama', 'Free Bird', 'Simple Man', 'Tuesday\'s Gone'], correct: 0, category: 'רוק' },
-  { clue: '🎵 Stairway to Heaven... there\'s a lady who\'s sure...', answer: 'Stairway to Heaven', opts: ['Stairway to Heaven', 'Kashmir', 'Whole Lotta Love', 'Black Dog'], correct: 0, category: 'רוק' },
-
   // ילדים
-  { clue: '🎵 Let it go, let it go... can\'t hold it back anymore!', answer: 'Let It Go - Frozen', opts: ['Elsa\'s Song', 'Let It Be', 'Let It Go - Frozen', 'Beauty and the Beast'], correct: 2, category: 'ילדים' },
-  { clue: '🎵 Twinkle twinkle little star... how I wonder what you are!', answer: 'Twinkle Twinkle', opts: ['ABC Song', 'Twinkle Twinkle', 'Mary Had a Lamb', 'Row Your Boat'], correct: 1, category: 'ילדים' },
-  { clue: '🎵 Under the sea... under the sea... darling it\'s better down where it\'s wetter!', answer: 'Under the Sea - Little Mermaid', opts: ['Part of Your World', 'Under the Sea - Little Mermaid', 'Kiss the Girl', 'Poor Unfortunate Souls'], correct: 1, category: 'ילדים' },
-  { clue: '🎵 Hakuna Matata... what a wonderful phrase!', answer: 'Hakuna Matata', opts: ['Circle of Life', 'Can You Feel the Love', 'Hakuna Matata', 'I Just Can\'t Wait'], correct: 2, category: 'ילדים' },
-  { clue: '🎵 Be our guest, be our guest... put our service to the test!', answer: 'Be Our Guest - Beauty and the Beast', opts: ['Tale as Old as Time', 'Be Our Guest - Beauty and the Beast', 'Lumiere\'s Song', 'Something There'], correct: 1, category: 'ילדים' },
-  { clue: '🎵 You\'ve got a friend in me... you\'ve got a friend in me!', answer: 'You\'ve Got a Friend in Me - Toy Story', opts: ['Woody\'s Roundup', 'You\'ve Got a Friend in Me - Toy Story', 'Strange Things', 'When She Loved Me'], correct: 1, category: 'ילדים' },
   { clue: '🎵 ראש כתפיים ברכיים ואצבעות... ברכיים ואצבעות!', answer: 'ראש כתפיים ברכיים', opts: ['ראש כתפיים ברכיים', 'הגוף שלי', 'ידיים ורגליים', 'איפה האף'], correct: 0, category: 'ילדים' },
   { clue: '🎵 פיל קטן הלך לטייל... ביום בהיר ויפה...', answer: 'פיל קטן', opts: ['הפיל', 'פיל קטן', 'ג\'ונגל', 'חיות הבר'], correct: 1, category: 'ילדים' },
 ];
@@ -3831,7 +3806,6 @@ const PICTURE_QUESTIONS = [
   { desc: 'תמונה: כיפה מוזהבת, אבן לבנה גדולה, ירושלים, מוסלמים מתפללים', opts: ['כיפת הסלע','מסגד אל-אקצא','הר הבית','הכותל המערבי'], correct: 0, reveal: '🕌 כיפת הסלע — ירושלים' },
   { desc: 'תמונה: חמישה טבעות צבעוניות קשורות, רקע לבן, שחור, אדום, צהוב, ירוק, כחול', opts: ['אולימפיאדה','מופע צירקוס','דגל האו"ם','ספר ילדים'], correct: 0, reveal: '🏅 סמל האולימפיאדה' },
   { desc: 'תמונה: ספר עם עטיפה כחולה ואדומה, ילד עם משקפיים, צלקת ברק על המצח', opts: ['הארי פוטר','פרסי ג\'קסון','הוביט','ילד הנבואה'], correct: 0, reveal: '⚡ הארי פוטר — ויזארד האגדה' },
-  { desc: 'תמונה: שולחן ארוך, עשרה אנשים, לחם ויין, אחד בורח', opts: ['הסעודה האחרונה','פסח','שבת','ברית מילה'], correct: 0, reveal: '✝️ הסעודה האחרונה של ישו' },
   { desc: 'תמונה: ים כחול, בדאי עם מגל ולבוש לבן, ספינה ישנה, פסל בים', opts: ['פסל החירות','פסל הדייג','פסל הפוסידון','פוסידון אתונה'], correct: 0, reveal: '🗽 פסל החירות בניו יורק' },
   { desc: 'תמונה: ענן אטומי גדול, עיר יפנית, פטרייה ענקית עולה לשמיים, שנת 1945', opts: ['פצצה גרעינית','הר געש','סופת ברד','פיצוץ מפעל'], correct: 0, reveal: '💥 פיצוץ הפצצה האטומית בהירושימה' },
   { desc: 'תמונה: ילד כחול, פיל גדול אפור, ג\'ונגל, חבורת קופים, נחש ענק', opts: ['ספר הג\'ונגל','טרזן','פיל דאמבו','ראנגלי'], correct: 0, reveal: '🐍 ספר הג\'ונגל — מוגלי' },
@@ -3840,7 +3814,6 @@ const PICTURE_QUESTIONS = [
   { desc: 'תמונה: בניין לבן ענק, כיפה גדולה, שני בתים גבוהים בצדדים, ירוק מסביב', opts: ['בית הלבן','קפיטול','פרלמנט','נשיאות צרפת'], correct: 0, reveal: '🏛️ הבית הלבן בוושינגטון' },
   { desc: 'תמונה: ממתק ארוך, פסים לבנים ואדומים, בצורת ווו, מיני', opts: ['מקל סוכריות','שוקולד מקל','גלידה במקל','עוגיית וניל'], correct: 0, reveal: '🍬 מקל הסוכריות של חג המולד' },
   { desc: 'תמונה: שני שחקנים, משחק לוח, 64 ריבועים, כלים עם כתרים ועוד', opts: ['שחמט','שש-בש','דמקה','מונופולי'], correct: 0, reveal: '♟️ שחמט — משחק הלוח הקלאסי' },
-  { desc: 'תמונה: עלה עם שבע אצבעות, ירוק כהה, עגול מאוד, פרח צהוב בצד', opts: ['עלה קנאביס','עלה אשור','עלה תפוח','עלה ענב'], correct: 0, reveal: '🍃 עלה קנאביס' },
   { desc: 'תמונה: ייצור קטן, כחול, אוזניים ארוכות, שלוש כפתורים, שמח', opts: ['סטיץ','דוריאן','מינייון','גרוביט'], correct: 0, reveal: '💙 סטיץ — הייצור הכחול של דיסני' },
   { desc: 'תמונה: אצטדיון ענק, ריצה 100 מטר, ספורטאי מרים ידיים, בוסאיין בולט', opts: ['אולימפיאדת בייג\'ינג','אולימפיאדת לונדון','מונדיאל','גרנד פרי'], correct: 1, reveal: '🏃 אולימפיאדת לונדון 2012 — אוסיין בולט' },
   { desc: 'תמונה: עגבניות, גבינה לבנה, בצל, שום, ירוקים, בלילת שמן זית', opts: ['שקשוקה','פיצה','פסטה','פלאפל'], correct: 0, reveal: '🍳 שקשוקה ישראלית קלאסית!' },
