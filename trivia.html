@@ -135,6 +135,8 @@ body{font-family:'Rubik',sans-serif;background:var(--bg);color:var(--text);font-
 
 .mode-card.m-headtohead{color:var(--red);}
 .mode-card.m-headtohead .mode-badge{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+.mode-card.m-bracket{color:var(--gold);}
+.mode-card.m-bracket .mode-badge{background:rgba(245,200,66,0.15);color:var(--gold);border:1px solid rgba(245,200,66,0.3);}
 .mode-card.m-classic{color:var(--blue);}
 .mode-card.m-classic .mode-badge{background:rgba(65,105,225,0.15);color:#7090ff;border:1px solid rgba(65,105,225,0.3);}
 .mode-card.m-vote{color:var(--purple);}
@@ -784,6 +786,12 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
         <div class="mode-name" style="color:var(--red)">ראש בראש</div>
         <div class="mode-desc">רק מי שעונה ראשון ונכון מקבל ניקוד. מבחן מהירות.</div>
         <div class="mode-badge">100 נק' לראשון בלבד</div>
+      </div>
+      <div class="mode-card m-bracket" data-name="טורניר ראש בראש" onclick="selectMode('bracket')">
+        <div class="mode-icon">🏆</div>
+        <div class="mode-name" style="color:var(--gold)">טורניר ראש בראש</div>
+        <div class="mode-desc">זוגות מתמודדים 1 מול 1, המפסיד יוצא, עד שנשאר אלוף אחד.</div>
+        <div class="mode-badge">אלמנטציה — sudden death</div>
       </div>
       <div class="mode-card m-classic" data-name="כולנו מנצחים" onclick="selectMode('classic')">
         <div class="mode-icon">🎯</div>
@@ -2687,9 +2695,9 @@ setInterval(()=>{ if(currentScreen==='lobby') refreshBubbles(); }, 4000);
 
 // ========== STATE ==========
 const COLORS=['#4169e1','#8b5cf6','#ef4444','#f5c842','#22c55e','#f97316'];
-const MODE_NAMES = {headtohead:'⚡ ראש בראש',classic:'🎯 כולנו מנצחים',vote:'🗳️ הצבעה',survival:'💀 הישרדות',speedrun:'🏃 ספידראן',teamplay:'🤝 קבוצות',reaction:'⚡ תגובה מהירה',number:'🔢 נחש את המספר',wordchain:'🔤 שרשרת מילים',majority:'👥 רוב העם',blitz:'⚡🧠 בליץ',whosaid:'💬 מי אמר?',lightning:'⚡💥 חידון ברק',price:'💰 כמה זה שווה?',truefalse:'✅ נכון/לא נכון',emoji:'😂 חידון אמוג\'י',hotseat:'🔥 הכיסא החם',family:'👨‍👩‍👧 משפחה',guesssong:'🎵 ניחוש שיר',whoami:'🕵️ מי אני?',biblechain:'📜⛓️ שרשרת תנ"ך',whofirst:'⏳🥇 מי הראשון?',spinwheel:'🎡 גלגל המזל',doubledown:'💰🎲 הכפיל או הפסד',flashback:'⏰ פלאשבק',passnote:'📝 מסירת הפתק',pyramid:'🔺 פירמידה',picture:'🖼️ פענוח תמונה'};
-  const MODE_COLORS = {headtohead:'rgba(239,68,68,0.15)',classic:'rgba(65,105,225,0.15)',vote:'rgba(139,92,246,0.15)',survival:'rgba(34,197,94,0.15)',speedrun:'rgba(249,115,22,0.15)',teamplay:'rgba(244,114,182,0.15)',reaction:'rgba(250,204,21,0.15)',number:'rgba(52,211,153,0.15)',wordchain:'rgba(167,139,250,0.15)',majority:'rgba(251,113,133,0.15)',blitz:'rgba(103,232,249,0.15)',whosaid:'rgba(251,191,36,0.15)',lightning:'rgba(240,171,252,0.15)',price:'rgba(245,200,66,0.15)',truefalse:'rgba(74,222,128,0.15)',emoji:'rgba(249,168,212,0.15)',hotseat:'rgba(74,222,128,0.15)',family:'rgba(255,183,77,0.2)',guesssong:'rgba(167,139,250,0.2)',whoami:'rgba(56,189,248,0.2)',biblechain:'rgba(251,191,36,0.2)',whofirst:'rgba(52,211,153,0.2)',spinwheel:'rgba(249,115,22,0.2)',doubledown:'rgba(232,121,249,0.2)',flashback:'rgba(251,146,60,0.2)',passnote:'rgba(52,211,153,0.2)',pyramid:'rgba(245,158,11,0.2)',picture:'rgba(56,189,248,0.2)'};
-  const MODE_TC = {headtohead:'var(--red)',classic:'#7090ff',vote:'var(--purple)',survival:'var(--green)',speedrun:'var(--orange)',teamplay:'#f472b6',reaction:'#facc15',number:'#34d399',wordchain:'#a78bfa',majority:'#fb7185',blitz:'#67e8f9',whosaid:'#fbbf24',lightning:'#f0abfc',price:'var(--gold)',truefalse:'var(--green)',emoji:'#f9a8d4',hotseat:'#4ade80',family:'#ffb74d',guesssong:'#a78bfa',whoami:'#38bdf8',biblechain:'#fbbf24',whofirst:'#34d399',spinwheel:'#f97316',doubledown:'#e879f9',flashback:'#fb923c',passnote:'#34d399',pyramid:'#f59e0b',picture:'#38bdf8'};
+const MODE_NAMES = {headtohead:'⚡ ראש בראש',bracket:'🏆 טורניר ראש בראש',classic:'🎯 כולנו מנצחים',vote:'🗳️ הצבעה',survival:'💀 הישרדות',speedrun:'🏃 ספידראן',teamplay:'🤝 קבוצות',reaction:'⚡ תגובה מהירה',number:'🔢 נחש את המספר',wordchain:'🔤 שרשרת מילים',majority:'👥 רוב העם',blitz:'⚡🧠 בליץ',whosaid:'💬 מי אמר?',lightning:'⚡💥 חידון ברק',price:'💰 כמה זה שווה?',truefalse:'✅ נכון/לא נכון',emoji:'😂 חידון אמוג\'י',hotseat:'🔥 הכיסא החם',family:'👨‍👩‍👧 משפחה',guesssong:'🎵 ניחוש שיר',whoami:'🕵️ מי אני?',biblechain:'📜⛓️ שרשרת תנ"ך',whofirst:'⏳🥇 מי הראשון?',spinwheel:'🎡 גלגל המזל',doubledown:'💰🎲 הכפיל או הפסד',flashback:'⏰ פלאשבק',passnote:'📝 מסירת הפתק',pyramid:'🔺 פירמידה',picture:'🖼️ פענוח תמונה'};
+  const MODE_COLORS = {headtohead:'rgba(239,68,68,0.15)',bracket:'rgba(245,200,66,0.15)',classic:'rgba(65,105,225,0.15)',vote:'rgba(139,92,246,0.15)',survival:'rgba(34,197,94,0.15)',speedrun:'rgba(249,115,22,0.15)',teamplay:'rgba(244,114,182,0.15)',reaction:'rgba(250,204,21,0.15)',number:'rgba(52,211,153,0.15)',wordchain:'rgba(167,139,250,0.15)',majority:'rgba(251,113,133,0.15)',blitz:'rgba(103,232,249,0.15)',whosaid:'rgba(251,191,36,0.15)',lightning:'rgba(240,171,252,0.15)',price:'rgba(245,200,66,0.15)',truefalse:'rgba(74,222,128,0.15)',emoji:'rgba(249,168,212,0.15)',hotseat:'rgba(74,222,128,0.15)',family:'rgba(255,183,77,0.2)',guesssong:'rgba(167,139,250,0.2)',whoami:'rgba(56,189,248,0.2)',biblechain:'rgba(251,191,36,0.2)',whofirst:'rgba(52,211,153,0.2)',spinwheel:'rgba(249,115,22,0.2)',doubledown:'rgba(232,121,249,0.2)',flashback:'rgba(251,146,60,0.2)',passnote:'rgba(52,211,153,0.2)',pyramid:'rgba(245,158,11,0.2)',picture:'rgba(56,189,248,0.2)'};
+  const MODE_TC = {headtohead:'var(--red)',bracket:'var(--gold)',classic:'#7090ff',vote:'var(--purple)',survival:'var(--green)',speedrun:'var(--orange)',teamplay:'#f472b6',reaction:'#facc15',number:'#34d399',wordchain:'#a78bfa',majority:'#fb7185',blitz:'#67e8f9',whosaid:'#fbbf24',lightning:'#f0abfc',price:'var(--gold)',truefalse:'var(--green)',emoji:'#f9a8d4',hotseat:'#4ade80',family:'#ffb74d',guesssong:'#a78bfa',whoami:'#38bdf8',biblechain:'#fbbf24',whofirst:'#34d399',spinwheel:'#f97316',doubledown:'#e879f9',flashback:'#fb923c',passnote:'#34d399',pyramid:'#f59e0b',picture:'#38bdf8'};
 let players={},gameState='lobby',gameMode='classic',currentQ=null,correctAns=null;
 let currentActiveRoomId = null; // ✅ איזה חדר מריץ כרגע את המשחק החי בשרת (לצורך הצגת אזהרה בפאנל השליטה של חדר אחר)
 let timerInt=null,currentScreen='mode';
@@ -3803,6 +3811,7 @@ document.addEventListener('DOMContentLoaded', gwInit);
 
 const MODE_INTROS = {
   headtohead:  'ברוכים הבאים למשחק ראש בראש! בכל שאלה, המהיר ביותר שעונה נכון מנצח ומרוויח מאה נקודות. מי שיצבור הכי הרבה נקודות בסוף — הוא המנצח!',
+  bracket: 'ברוכים הבאים לטורניר ראש בראש! זוגות מתמודדים אחד מול השני, המפסיד יוצא, והמנצח ממשיך לסבב הבא — עד שנשאר אלוף אחד בלבד!',
   classic:     'ברוכים הבאים לחידון! כל תשובה נכונה מרוויחה נקודות. ענו בקצב שלכם לאורך כל המשחק. בהצלחה!',
   vote:        'ברוכים הבאים להצבעה! בחרו תשובה — אין נכון ולא נכון. מי שמצביע עם הרוב מרוויח נקודות!',
   survival:    'ברוכים הבאים להישרדות! בכל שאלה, מי שטועה יוצא מהמשחק. האחרון שנשאר עומד — הוא המנצח!',
@@ -3857,7 +3866,7 @@ function selectMode(mode) {
     return;
   }
   // מנהל — ההתנהגות הרגילה
-  if (['reaction','number','wordchain','majority','blitz','whosaid','lightning','price','truefalse','emoji','hotseat','guesssong','whoami','biblechain','whofirst','spinwheel','doubledown','flashback','passnote','pyramid','picture'].includes(mode)) {
+  if (['reaction','number','wordchain','majority','blitz','whosaid','lightning','price','truefalse','emoji','hotseat','guesssong','whoami','biblechain','whofirst','spinwheel','doubledown','flashback','passnote','pyramid','picture','bracket'].includes(mode)) {
     goAdmin();
     const ts = document.getElementById('topic-sel');
     if (ts) ts.style.display = 'none';
@@ -4233,6 +4242,43 @@ function handle(d){
         if(countdownActive) { window._pendingSpeak = { question: d.question, answers: ['נכון','לא נכון'], timeLimit: d.timeLimit||12 }; }
         else { speakQuestionThenStart(d.question, ['נכון','לא נכון'], d.timeLimit||12); }
       } else { startTimer(d.timeLimit||12); }
+      break;
+
+    case 'bracketMatchup':
+      showToast(`🏆 ${d.roundLabel}: ${d.playerA} מול ${d.playerB}`);
+      break;
+
+    case 'bracketQuestion':
+      ttsLog('case bracketQuestion', { roundId: d.roundId });
+      stopTimer();
+      currentQ=d; gameMode='bracket'; correctAns=null;
+      Object.values(players).forEach(p=>{p.answered=false;p._chosen=null;});
+      renderQuestion(d);
+      maybeAddBracketBanner(d);
+      updateStatus();
+      startMusic();
+      if(ttsOn) {
+        if(countdownActive) { window._pendingSpeak = { question: d.question, answers: d.answers, timeLimit: d.timeLimit||20, roundId: d.roundId }; }
+        else { speakQuestionThenStart(d.question, d.answers, d.timeLimit||20, d.roundId); }
+      } else { startTimer(d.timeLimit||20); }
+      break;
+
+    case 'bracketReveal':
+      stopTimer();
+      sfx.reveal();
+      correctAns = d.correctIndex;
+      renderAnswers(d.correctIndex);
+      if (d.winnerName) showToast(`🏅 ${d.winnerName} מנצח/ת את הקרב!`);
+      else showToast('🔁 שוברי שוויון — שאלה נוספת לאותו זיווג');
+      break;
+
+    case 'bracketChampion':
+      if (d.championName) showToast(`👑 האלוף/ה של הטורניר: ${d.championName}!`);
+      else showToast('הטורניר הסתיים');
+      break;
+
+    case 'bracketError':
+      showToast('⚠️ ' + (d.message || 'שגיאה בטורניר'));
       break;
 
     case 'majorityRound':
@@ -4999,7 +5045,7 @@ async function startGameFromRoom() {
   if (!gameMode) { showToast('⚠️ יש לבחור מצב משחק תחילה — לחץ 🎮 בחר מצב'); goMode(); return; }
   const data = await gwFetchRoomData();
   const qCount = data?.questions?.length || 0;
-  const standaloneGames = ['reaction','number','wordchain','majority','blitz','spinwheel','doubledown','flashback','passnote','pyramid','guesssong','whoami','biblechain','whofirst'];
+  const standaloneGames = ['reaction','number','wordchain','majority','blitz','spinwheel','doubledown','flashback','passnote','pyramid','guesssong','whoami','biblechain','whofirst','bracket'];
   if (!standaloneGames.includes(gameMode) && qCount === 0) {
     showToast('⚠️ אין שאלות בחדר — פתח בנאי חדר והוסף שאלות');
     return;
@@ -5039,6 +5085,7 @@ function startGame(){
   if (gameMode === 'flashback') { fetch('/start-flashback'+gameCtrlQS()); getAC(); return; }
   if (gameMode === 'passnote')  { fetch('/start-passnote'+gameCtrlQS()); getAC(); return; }
   if (gameMode === 'pyramid')   { fetch('/start-pyramid'+gameCtrlQS());   getAC(); return; }
+  if (gameMode === 'bracket')   { fetch('/start-bracket'+gameCtrlQS());   getAC(); return; }
   if (gameMode === 'family')    { showFamilySelector(); return; }
 
   const selected = getSelectedCats();
@@ -8157,6 +8204,17 @@ function maybeAddHotseatBanner(d) {
     banner.innerHTML = `<div style="font-size:1.8rem;">🔥</div><div><div style="font-weight:900;color:#4ade80;font-size:1rem;">${window._hotseatName} על הכיסא החם!</div><div style="font-size:0.82rem;color:var(--muted);">שאר השחקנים: לחצו 1 אם לדעתכם יצליח, 2 אם לא</div></div>`;
     qarea.insertBefore(banner, qarea.firstChild);
   }
+}
+
+// באנר "X מול Y" מעל השאלה במצב הטורניר — מזכיר לכולם מי בקרב הפעיל כרגע
+function maybeAddBracketBanner(d) {
+  if (gameMode !== 'bracket') return;
+  const qarea = document.getElementById('qarea');
+  if (!qarea) return;
+  const banner = document.createElement('div');
+  banner.style.cssText = 'background:linear-gradient(135deg,rgba(245,200,66,0.18),rgba(245,200,66,0.08));border:2px solid var(--gold);border-radius:12px;padding:10px 18px;display:flex;align-items:center;gap:10px;margin-bottom:4px;animation:fadeU 0.4s ease;';
+  banner.innerHTML = `<div style="font-size:1.8rem;">🏆</div><div><div style="font-weight:900;color:var(--gold);font-size:1rem;">${d.roundLabel||''}: ${d.playerA||'?'} מול ${d.playerB||'?'}</div><div style="font-size:0.82rem;color:var(--muted);">שאר הצופים: תיהנו מהקרב, התוצאה לא נספרת לכם</div></div>`;
+  qarea.insertBefore(banner, qarea.firstChild);
 }
 
 </script>
