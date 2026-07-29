@@ -18,6 +18,7 @@ WORKDIR /app
 COPY server.js .
 COPY trivia.html .
 COPY admin-log.html .
+COPY instructions.html .
 COPY questions.json .
 
 RUN npm init -y && npm install express yemot-router2 ioredis
