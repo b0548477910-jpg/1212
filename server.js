@@ -1162,6 +1162,7 @@ await call.read(
         else if (gameMode === 'picture')   handlePicAnswer(player, chosen);
         else if (gameMode === 'pyramid')   handlePyramidAnswer(player, chosen);
         else if (gameMode === 'passnote')  handlePassNoteAnswer(player, chosen);
+        else if (gameMode === 'bracket')   handleBracketAnswer(player, chosen);
         else handleAnswer(player, chosen);
       }
     }
@@ -1313,6 +1314,7 @@ function stopAllTimers() {
   if (typeof passTimer !== 'undefined') clearTimeout(passTimer);
   if (typeof pyramidTimer !== 'undefined') clearTimeout(pyramidTimer);
   if (typeof picTimer !== 'undefined') clearTimeout(picTimer);
+  if (typeof bracketTimer !== 'undefined') clearTimeout(bracketTimer);
   gamePaused = false;
 }
 
@@ -3866,6 +3868,169 @@ function handlePicAnswer(player, chosen) {
 }
 
 app.get('/start-picture', checkGameControlAuth, (req, res) => { startPictureGame(); res.send('ok'); });
+
+// ===== טורניר ראש בראש (BRACKET) — זוגות מתמודדים, מפסיד יוצא, עד שנשאר אלוף אחד =====
+let bracket = null;
+let bracketTimer = null;
+let bracketAskedIdx = new Set();
+
+function _bracketShuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function startBracket() {
+  stopAllTimers();
+  const roster = Object.values(players).map(p => p.callId);
+  if (roster.length < 2) {
+    log('⚠️', 'טורניר ראש בראש: צריך לפחות 2 שחקנים מחוברים כדי להתחיל');
+    broadcast({ type: 'bracketError', message: 'צריך לפחות 2 שחקנים מחוברים כדי להתחיל טורניר' });
+    return;
+  }
+  gameState = 'playing'; gameMode = 'bracket';
+  Object.values(players).forEach(p => { p.score = 0; p.correct = 0; p.answered = false; p._chosen = null; });
+  bracketAskedIdx = new Set();
+  bracket = { roundNum: 1, roundPlayers: _bracketShuffle(roster), pairs: [], pairIdx: -1, winnersThisRound: [], activePair: null, currentQ: null, roundId: null };
+  broadcast({ type: 'gameStart', total: 0, topic: '', mode: 'bracket' });
+  log('🏆', `טורניר ראש בראש מתחיל עם ${roster.length} משתתפים`);
+  _bracketBuildPairs();
+  setTimeout(nextBracketMatch, 1500);
+}
+
+function _bracketBuildPairs() {
+  const list = _bracketShuffle(bracket.roundPlayers);
+  bracket.pairs = [];
+  for (let i = 0; i < list.length; i += 2) {
+    if (i + 1 < list.length) bracket.pairs.push([list[i], list[i + 1]]);
+    else {
+      const byeId = list[i];
+      bracket.winnersThisRound.push(byeId);
+      const p = players[byeId];
+      log('🎫', `${p ? p.name : byeId} מקבל/ת bye (מעבר אוטומטי, מספר משתתפים אי-זוגי)`);
+    }
+  }
+  bracket.pairIdx = -1;
+}
+
+function _bracketRoundLabel(numPlayers) {
+  if (numPlayers <= 2) return 'הגמר';
+  if (numPlayers <= 4) return 'חצי גמר';
+  if (numPlayers <= 8) return 'רבע גמר';
+  return `סבב ${bracket.roundNum}`;
+}
+
+function nextBracketMatch() {
+  if (gameState !== 'playing' || gameMode !== 'bracket' || !bracket) return;
+  bracket.pairIdx++;
+  if (bracket.pairIdx >= bracket.pairs.length) {
+    if (bracket.winnersThisRound.length <= 1) { endBracket(bracket.winnersThisRound[0] || null); return; }
+    bracket.roundNum++;
+    bracket.roundPlayers = bracket.winnersThisRound;
+    bracket.winnersThisRound = [];
+    _bracketBuildPairs();
+    if (bracket.pairs.length === 0) { endBracket(bracket.roundPlayers[0] || null); return; }
+    bracket.pairIdx = 0;
+  }
+  const [aId, bId] = bracket.pairs[bracket.pairIdx];
+  const pa = players[aId], pb = players[bId];
+  if (!pa || !pb) {
+    // מישהו התנתק תוך כדי הטורניר — היריב הנשאר מקבל ניצחון אוטומטי
+    const survivor = pa ? aId : (pb ? bId : null);
+    log('📴', 'שחקן התנתק תוך כדי הטורניר — יריבו/ה מקבל/ת ניצחון אוטומטי');
+    if (survivor) bracket.winnersThisRound.push(survivor);
+    nextBracketMatch();
+    return;
+  }
+  bracket.activePair = [aId, bId];
+  const label = _bracketRoundLabel(bracket.roundPlayers.length);
+  log('⚔️', `${label} — קרב ${bracket.pairIdx + 1}/${bracket.pairs.length}: ${pa.name} נגד ${pb.name}`);
+  broadcast({ type: 'bracketMatchup', roundLabel: label, playerA: pa.name, playerB: pb.name, matchNum: bracket.pairIdx + 1, totalMatches: bracket.pairs.length });
+  const voice = _lastClientVoice || getRoomSetting('trivia_voice', 'edge:avri');
+  fetchTTS(`${label}! ${pa.name} מול ${pb.name}!`, voice, _lastClientSpeed).catch(() => {});
+  setTimeout(askBracketQuestion, 3500);
+}
+
+function askBracketQuestion() {
+  if (gameState !== 'playing' || gameMode !== 'bracket' || !bracket || !bracket.activePair) return;
+  const pool = loadQuestions();
+  let idx, tries = 0;
+  do { idx = Math.floor(Math.random() * pool.length); tries++; } while (bracketAskedIdx.has(idx) && tries < 200);
+  bracketAskedIdx.add(idx);
+  bracket.currentQ = pool[idx];
+  bracket.roundId = Date.now();
+  const [aId, bId] = bracket.activePair;
+  [aId, bId].forEach(id => { if (players[id]) { players[id].answered = false; players[id]._chosen = null; players[id]._answeredAt = null; } });
+  const q = bracket.currentQ;
+  const voice = _lastClientVoice || getRoomSetting('trivia_voice', 'edge:avri');
+  fetchTTS(buildQuestionTTSText(q), voice, _lastClientSpeed).catch(() => {});
+  broadcast({
+    type: 'bracketQuestion', question: q.q, answers: q.a, topic: q.topic, timeLimit: 20, roundId: bracket.roundId,
+    playerA: players[aId]?.name, playerB: players[bId]?.name, roundLabel: _bracketRoundLabel(bracket.roundPlayers.length)
+  });
+  clearTimeout(bracketTimer);
+  bracketTimer = setTimeout(revealBracketQuestion, 20000);
+}
+
+function revealBracketQuestion() {
+  clearTimeout(bracketTimer);
+  if (!bracket || !bracket.currentQ || !bracket.activePair) return;
+  const q = bracket.currentQ;
+  const [aId, bId] = bracket.activePair;
+  const pa = players[aId], pb = players[bId];
+  let winnerId = null;
+  const aOk = pa && pa._chosen === q.correct, bOk = pb && pb._chosen === q.correct;
+  if (aOk && bOk) winnerId = (pa._answeredAt <= pb._answeredAt) ? aId : bId; // שניהם צדקו — מי שהיה מהיר יותר מנצח
+  else if (aOk) winnerId = aId;
+  else if (bOk) winnerId = bId;
+
+  broadcast({ type: 'bracketReveal', correctIndex: q.correct, correctText: q.a[q.correct], winnerName: winnerId ? players[winnerId]?.name : null });
+
+  if (!winnerId) {
+    log('🔁', 'אף אחד מהשניים לא ענה נכון — שאלת שוברת שוויון לאותו זיווג');
+    setTimeout(askBracketQuestion, 3000);
+    return;
+  }
+  log('🏅', `${players[winnerId]?.name} מנצח/ת את הקרב ומתקדם/ת!`);
+  if (players[winnerId]) { players[winnerId].score += 100; players[winnerId].correct++; }
+  bracket.winnersThisRound.push(winnerId);
+  bracket.activePair = null; bracket.currentQ = null;
+  setTimeout(nextBracketMatch, 4000);
+}
+
+function handleBracketAnswer(player, chosen) {
+  if (!bracket || !bracket.activePair || !bracket.activePair.includes(player.callId)) return; // צופה, לא בקרב הפעיל — מתעלמים
+  if (player.answered) return;
+  player.answered = true; player._chosen = chosen; player._answeredAt = Date.now();
+  const q = bracket.currentQ;
+  const isCorrect = chosen === q.correct;
+  broadcast({ type: 'answer', playerName: player.name, phone: player.phone, chosen, correct: isCorrect, mode: 'bracket' });
+  const [aId, bId] = bracket.activePair;
+  const pa = players[aId], pb = players[bId];
+  if (isCorrect) {
+    // ניצחון מיידי (sudden death) — אין טעם לחכות ליריב אם כבר יש תשובה נכונה
+    clearTimeout(bracketTimer);
+    setTimeout(revealBracketQuestion, 600);
+  } else if (pa && pb && pa.answered && pb.answered) {
+    clearTimeout(bracketTimer);
+    setTimeout(revealBracketQuestion, 600);
+  }
+}
+
+function endBracket(championId) {
+  const champ = championId ? players[championId] : null;
+  log('👑', champ ? `האלוף/ה של הטורניר: ${champ.name}!` : 'הטורניר הסתיים בלי אלוף/ה ברור/ה');
+  if (champ) champ.score += 500; // בונוס אלופות בולט, כדי שיוביל ברור במסך הניקוד הסופי
+  broadcast({ type: 'bracketChampion', championName: champ ? champ.name : null });
+  if (champ) {
+    const voice = _lastClientVoice || getRoomSetting('trivia_voice', 'edge:avri');
+    fetchTTS(`מזל טוב! האלוף של הטורניר הוא... ${champ.name}!`, voice, _lastClientSpeed).catch(() => {});
+  }
+  bracket = null;
+  setTimeout(endGame, 4000); // אחרי רגע החגיגה — מעבר למסך הניקוד הסופי הרגיל
+}
+
+app.get('/start-bracket', checkGameControlAuth, (req, res) => { startBracket(); res.send('ok'); });
 
 // ===== פירמידה (PYRAMID) — שאלות קשות ויותר, ניקוד עולה, טעות חוצה ניקוד =====
 let pyramidTimer = null, pyramidRound = 0, pyramidQuestions = [];
