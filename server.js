@@ -1211,6 +1211,13 @@ app.get('/admin-log', (req, res) => {
   else res.status(404).send('not found');
 });
 
+// דף הוראות/הסברים מפורט לכל סוגי המשחק — פתוח לכולם, לא דורש סיסמה (זה תוכן הסברי, לא ניהולי)
+app.get('/instructions', (req, res) => {
+  const file = path.join(__dirname, 'instructions.html');
+  if (fs.existsSync(file)) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.send(fs.readFileSync(file)); }
+  else res.status(404).send('not found');
+});
+
 // שינוי סיסמת המנהל — חייבים לספק את הסיסמה הנוכחית כדי לשנות אותה
 app.post('/change-admin-key', (req, res) => {
   const { currentKey, newKey } = req.body || {};
