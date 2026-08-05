@@ -711,6 +711,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
           <button class="btn btn-ghost" onclick="downloadCalls()" title="מי התקשר למספר">📞 שיחות</button>
           <button class="btn btn-ghost" onclick="window.open('/admin-log?key='+encodeURIComponent(ADMIN_KEY),'_blank')" title="תיעודים חיים — מי מחובר עכשיו" style="background:rgba(34,197,94,0.15);border-color:var(--green);color:var(--green)">🟢 חי</button>
           <button class="btn btn-ghost" onclick="window.open('/instructions','_blank')" title="הוראות והסברים על כל סוגי המשחק">📖 הוראות</button>
+          <button class="btn btn-ghost" onclick="exportResults()" title="ייצוא תוצאות המשחק האחרון ל-Excel">📊 ייצוא תוצאות</button>
         </div>
       </div>
       <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
@@ -1032,6 +1033,21 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
         <button onclick="setTheme('orange')" class="thbtn" style="background:#150a00;border-color:#fb923c" title="כתום"></button>
         <button onclick="setTheme('teal')"   class="thbtn" style="background:#01121a;border-color:#22d3ee" title="טורקיז"></button>
       </div>
+      <!-- Row 3: לוגו/רקע מותאם אישית -->
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">🖼️ רקע מותאם:</span>
+        <input type="text" id="custom-bg-input" placeholder="הדביקו קישור לתמונה..." style="flex:1;min-width:160px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:0.78rem;">
+        <button onclick="setCustomBg(document.getElementById('custom-bg-input').value)" class="btn btn-ghost btn-sm">שמור קישור</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;">📁 העלה קובץ<input type="file" accept="image/*" style="display:none;" onchange="uploadCustomImage(this.files[0], setCustomBg)"></label>
+        <button onclick="setCustomBg('')" class="btn btn-ghost btn-sm" title="הסר רקע מותאם">🗑️</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">🏷️ לוגו מותאם:</span>
+        <input type="text" id="custom-logo-input" placeholder="הדביקו קישור לתמונה..." style="flex:1;min-width:160px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:0.78rem;">
+        <button onclick="setCustomLogo(document.getElementById('custom-logo-input').value)" class="btn btn-ghost btn-sm">שמור קישור</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;">📁 העלה קובץ<input type="file" accept="image/*" style="display:none;" onchange="uploadCustomImage(this.files[0], setCustomLogo)"></label>
+        <button onclick="setCustomLogo('')" class="btn btn-ghost btn-sm" title="הסר לוגו">🗑️</button>
+      </div>
     </div>
 
     <!-- ADMIN GRID -->
@@ -1348,6 +1364,12 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
           <input id="rb-custom-a2" class="inp" placeholder="תשובה 3">
           <input id="rb-custom-a3" class="inp" placeholder="תשובה 4">
         </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">🖼️ תמונה לשאלה (אופציונלי):</span>
+          <input id="rb-custom-image" class="inp" placeholder="קישור לתמונה..." style="flex:1;min-width:140px;font-size:0.85rem;" oninput="rbCustomImage=this.value">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;">📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCustomImage(this.files[0], v=>{rbCustomImage=v;document.getElementById('rb-custom-image').value='(תמונה הועלתה ✓)';})"></label>
+          <button class="btn btn-ghost btn-sm" onclick="rbCustomImage='';document.getElementById('rb-custom-image').value=''" title="הסר תמונה">🗑️</button>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <select id="rb-custom-correct" class="sel" style="flex:1;min-width:120px;">
             <option value="0">✓ תשובה 1 נכונה</option>
@@ -1410,6 +1432,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 
 <!-- GAME -->
 <div id="game-screen" class="screen hidden">
+  <img id="custom-logo-img" src="" style="display:none;position:absolute;top:10px;left:10px;max-height:60px;max-width:120px;z-index:50;border-radius:8px;">
   <div class="game-layout">
     <div class="gside">
       <div class="gside-title">👥 שחקנים</div>
@@ -1762,6 +1785,12 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
         <input class="inp" id="qe-a2" placeholder="תשובה 3">
         <input class="inp" id="qe-a3" placeholder="תשובה 4">
       </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">🖼️ תמונה (אופציונלי):</span>
+        <input class="inp" id="qe-image" placeholder="קישור לתמונה..." style="flex:1;min-width:140px;font-size:0.85rem;" oninput="qeCurrentImage=this.value">
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;">📁<input type="file" accept="image/*" style="display:none;" onchange="uploadCustomImage(this.files[0], v=>{qeCurrentImage=v;document.getElementById('qe-image').value='(תמונה הועלתה ✓)';})"></label>
+        <button class="btn btn-ghost btn-sm" onclick="qeCurrentImage='';document.getElementById('qe-image').value=''" title="הסר תמונה">🗑️</button>
+      </div>
       <div style="display:flex;gap:8px;">
         <select class="sel" id="qe-correct" style="flex:1">
           <option value="0">✓ תשובה 1</option><option value="1">✓ תשובה 2</option>
@@ -1955,10 +1984,10 @@ function startMusic() {
 function stopMusic() {
   if (!musicPlaying) return;
   try {
-    if (musicOsc?.allIntervals) musicOsc.allIntervals.forEach(iv=>clearInterval(iv));
+    if (musicOsc && musicOsc.allIntervals) musicOsc.allIntervals.forEach(iv=>clearInterval(iv));
     if (musicGain) { musicGain.gain.exponentialRampToValueAtTime(0.001, getAC().currentTime+0.35); }
     setTimeout(()=>{
-      try { musicOsc?.allOscs?.forEach(o=>o.stop()); } catch(e){}
+      try { if (musicOsc && musicOsc.allOscs) musicOsc.allOscs.forEach(o=>o.stop()); } catch(e){}
       musicPlaying=false;
     },400);
   } catch(e){ musicPlaying=false; }
@@ -1972,9 +2001,9 @@ function setMusicStyleImmediate(v) {
   if (musicPlaying) {
     // עצירה מיידית (בלי exponentialRamp):
     try {
-      if (musicOsc?.allIntervals) musicOsc.allIntervals.forEach(iv => clearInterval(iv));
+      if (musicOsc && musicOsc.allIntervals) musicOsc.allIntervals.forEach(iv => clearInterval(iv));
       if (musicGain) musicGain.gain.setValueAtTime(0, getAC().currentTime);
-      if (musicOsc?.allOscs) musicOsc.allOscs.forEach(o => { try { o.stop(); } catch(e){} });
+      if (musicOsc && musicOsc.allOscs) musicOsc.allOscs.forEach(o => { try { o.stop(); } catch(e){} });
     } catch(e) {}
     musicPlaying = false;
     if (musicOn) startMusic(); // הפעל מיד עם הסגנון החדש
@@ -2455,7 +2484,7 @@ function stopTagGame() {
   clearInterval(tagTimerId);
   clearInterval(tagSpeedBoostId);
   document.querySelectorAll('.b-it-crown,.b-it-label').forEach(e => e.remove());
-  document.querySelector('.tag-mode-indicator')?.remove();
+  var _tmi = document.querySelector('.tag-mode-indicator'); if (_tmi) _tmi.remove();
   // reset all glows
   activeBubbles.forEach(b => {
     if (b.av) {
@@ -2466,7 +2495,7 @@ function stopTagGame() {
 }
 
 function showTagIndicator() {
-  document.querySelector('.tag-mode-indicator')?.remove();
+  var _tmi = document.querySelector('.tag-mode-indicator'); if (_tmi) _tmi.remove();
   const d = document.createElement('div');
   d.className = 'tag-mode-indicator';
   d.textContent = '🏷️ מצב תופסת פעיל!';
@@ -2529,7 +2558,7 @@ function setTagIt(playerId, silent, prevName) {
 }
 
 function showTagBanner(emoji, text, color) {
-  document.querySelector('.tag-banner')?.remove();
+  var _tbn = document.querySelector('.tag-banner'); if (_tbn) _tbn.remove();
   const d = document.createElement('div');
   d.className = 'tag-banner';
   d.innerHTML = '<div class="tag-banner-inner" style="color:' + color + '">' + emoji + '<br>' + text + '</div>';
@@ -2585,7 +2614,7 @@ function updateTagPhysics() {
     }
     // Tag check
     if (fd < 12 && now > (tagCooldown[b.playerId] || 0) && now > (tagCooldown[tagItId] || 0)) {
-      setTagIt(b.playerId, false, activeBubbles.find(x=>x.playerId===tagItId)?.name);
+      var _tagP = activeBubbles.find(x=>x.playerId===tagItId); setTagIt(b.playerId, false, _tagP && _tagP.name);
     }
   });
 }
@@ -2656,7 +2685,7 @@ function animateBubbles() {
       const trail = document.createElement('div');
       trail.className = 'b-trail';
       trail.style.cssText = `left:${b.x+4}%;top:${b.y+4}%;width:18px;height:18px;background:${b.color}44;border:1px solid ${b.color}88;`;
-      document.getElementById('bubbles-c')?.appendChild(trail);
+      var _bc = document.getElementById('bubbles-c'); if (_bc) _bc.appendChild(trail);
       setTimeout(()=>trail.remove(), 400);
     }
 
@@ -2842,7 +2871,7 @@ async function changeAdminPassword() {
 // משחק מהיר הוסר — נשארו רק 2 לחצנים: ניהול וכניסה לחדר
 // כניסת מנהל — רק סיסמה, ללא שם חדר
 async function gwAdminLogin() {
-  const password = (document.getElementById('gw-admin-pass')?.value || '').trim();
+  const password = ((document.getElementById('gw-admin-pass')||{}).value || '').trim();
   const errEl = document.getElementById('gw-admin-error');
   if (!password) { if (errEl) errEl.textContent = 'יש להזין סיסמת ניהול'; return; }
   if (errEl) errEl.textContent = '';
@@ -2864,7 +2893,7 @@ async function gwAdminLogin() {
     if (ap) ap.style.display = '';
     gwLoadRoomsList();
     // הסתר שדה סיסמה, הצג כפתור כניסה למשחק
-    const passBlock = document.getElementById('gw-admin-pass')?.closest('div');
+    var _gap = document.getElementById('gw-admin-pass'); const passBlock = _gap && _gap.closest('div');
     if (passBlock) passBlock.style.display = 'none';
     const loginBtn = document.querySelector('#gw-panel-admin .btn-gold');
     if (loginBtn) loginBtn.style.display = 'none';
@@ -2907,15 +2936,15 @@ function gwApplySession() {
     const el = document.getElementById('gw-room-stats');
     if (!el) return;
     if (data) {
-      el.innerHTML = `📦 ${data.questions?.length || 0} שאלות בחדר | עודכן: ${data.updatedAt ? new Date(data.updatedAt).toLocaleDateString('he-IL') : '—'}`;
+      el.innerHTML = `📦 ${(data.questions||[]).length || 0} שאלות בחדר | עודכן: ${data.updatedAt ? new Date(data.updatedAt).toLocaleDateString('he-IL') : '—'}`;
       el.style.display = '';
     }
   });
 }
 
 async function gwLogin() {
-  const roomId = (document.getElementById('gw-room')?.value || '').trim();
-  const password = (document.getElementById('gw-pass')?.value || '').trim();
+  const roomId = ((document.getElementById('gw-room')||{}).value || '').trim();
+  const password = ((document.getElementById('gw-pass')||{}).value || '').trim();
   const errEl = document.getElementById('gw-error');
   if (!roomId || !password) { if (errEl) errEl.textContent = 'יש למלא שם חדר וסיסמה'; return; }
   if (errEl) errEl.textContent = '';
@@ -2969,11 +2998,11 @@ function gwLogout() {
 }
 
 async function gwCreateRoom() {
-  const roomId = (document.getElementById('gw-new-room')?.value || '').trim();
-  const password = (document.getElementById('gw-new-pass')?.value || '').trim();
-  const expiresInDays = document.getElementById('gw-new-expiry')?.value || '0';
-  const maxPlayers = document.getElementById('gw-new-maxplayers')?.value || '';
-  const note = (document.getElementById('gw-new-note')?.value || '').trim();
+  const roomId = ((document.getElementById('gw-new-room')||{}).value || '').trim();
+  const password = ((document.getElementById('gw-new-pass')||{}).value || '').trim();
+  const expiresInDays = (document.getElementById('gw-new-expiry')||{}).value || '0';
+  const maxPlayers = (document.getElementById('gw-new-maxplayers')||{}).value || '';
+  const note = ((document.getElementById('gw-new-note')||{}).value || '').trim();
   const msgEl = document.getElementById('gw-create-msg');
   if (!roomId || !password) { if (msgEl) { msgEl.textContent = 'יש למלא שם וסיסמה'; msgEl.style.color = 'var(--red)'; } return; }
   try {
@@ -3071,7 +3100,7 @@ async function gwFetchRoomData() {
 
 // הוסף שאלות מהמאגר לחדר (יקרא משלב 5)
 async function gwAddFromPool(questions) {
-  if (!gwRoomId || !questions?.length) return { ok: false };
+  if (!gwRoomId || !(questions && questions.length)) return { ok: false };
   const authPayload = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/add-from-pool`, {
@@ -3085,13 +3114,13 @@ async function gwAddFromPool(questions) {
 }
 
 // הוסף שאלה ידנית לחדר (יקרא משלב 6)
-async function gwAddCustomQuestion(q, a, correct, topic) {
+async function gwAddCustomQuestion(q, a, correct, topic, image) {
   if (!gwRoomId) return { ok: false };
   const authPayload2 = gwIsAdmin ? { key: ADMIN_KEY } : { password: gwRoomPassword };
   try {
     const r = await fetch(`/room-data/${encodeURIComponent(gwRoomId)}/add-custom`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q, a, correct, topic, ...authPayload2 })
+      body: JSON.stringify({ q, a, correct, topic, image: image || undefined, ...authPayload2 })
     });
     const d = await r.json();
     if (d.ok) gwRoomData = null;
@@ -3128,7 +3157,7 @@ async function showRoomBuilder() {
 
   // טען נתוני חדר קיימים
   const roomData = await gwFetchRoomData();
-  const inRoom = new Set((roomData?.questions || []).map(q => q.q));
+  const inRoom = new Set(((roomData||{}).questions || []).map(q => q.q));
 
   // סמן מראש שאלות שכבר בחדר
   rbSelected = new Set();
@@ -3137,7 +3166,7 @@ async function showRoomBuilder() {
   rbActiveCat = 'all';
   rbBuildCatFilters();
   rbRenderPool();
-  rbUpdateCounts(roomData?.questions?.length || 0);
+  rbUpdateCounts(((roomData||{}).questions||[]).length || 0);
   rbRefreshRoomList();
 
   // סנכרון הגדרות תצוגה: TTS, גופן, קול
@@ -3256,7 +3285,7 @@ async function rbAddCurrentCatToRoom() {
 }
 
 function rbRenderPool() {
-  const search = (document.getElementById('rb-search')?.value || '').trim().toLowerCase();
+  const search = ((document.getElementById('rb-search')||{}).value || '').trim().toLowerCase();
   const filtered = rbAllPool.map((q, i) => ({ q, i })).filter(({ q }) => {
     if (rbActiveCat !== 'all' && q.topic !== rbActiveCat) return false;
     if (search && !q.q.toLowerCase().includes(search) && !(q.a||[]).some(a=>a.toLowerCase().includes(search))) return false;
@@ -3395,13 +3424,13 @@ async function rbSaveToRoom() {
 // ===== שלב 6: שאלות אישיות + רשימת שאלות חדר + חסימת מחיקה =====
 
 async function rbAddCustom() {
-  const q   = (document.getElementById('rb-custom-q')?.value || '').trim();
-  const a0  = (document.getElementById('rb-custom-a0')?.value || '').trim();
-  const a1  = (document.getElementById('rb-custom-a1')?.value || '').trim();
-  const a2  = (document.getElementById('rb-custom-a2')?.value || '').trim();
-  const a3  = (document.getElementById('rb-custom-a3')?.value || '').trim();
-  const correct = parseInt(document.getElementById('rb-custom-correct')?.value || '0');
-  const topic = (document.getElementById('rb-custom-topic')?.value || '').trim() || 'אישי';
+  const q   = ((document.getElementById('rb-custom-q')||{}).value || '').trim();
+  const a0  = ((document.getElementById('rb-custom-a0')||{}).value || '').trim();
+  const a1  = ((document.getElementById('rb-custom-a1')||{}).value || '').trim();
+  const a2  = ((document.getElementById('rb-custom-a2')||{}).value || '').trim();
+  const a3  = ((document.getElementById('rb-custom-a3')||{}).value || '').trim();
+  const correct = parseInt((document.getElementById('rb-custom-correct')||{}).value || '0');
+  const topic = ((document.getElementById('rb-custom-topic')||{}).value || '').trim() || 'אישי';
   const msgEl = document.getElementById('rb-custom-msg');
 
   if (!q || !a0 || !a1) {
@@ -3415,12 +3444,13 @@ async function rbAddCustom() {
     return;
   }
 
-  const result = await gwAddCustomQuestion(q, a, Math.min(correct, a.length - 1), topic);
+  const result = await gwAddCustomQuestion(q, a, Math.min(correct, a.length - 1), topic, rbCustomImage);
   if (result.ok) {
     // נקה שדות
-    ['rb-custom-q','rb-custom-a0','rb-custom-a1','rb-custom-a2','rb-custom-a3','rb-custom-topic']
+    ['rb-custom-q','rb-custom-a0','rb-custom-a1','rb-custom-a2','rb-custom-a3','rb-custom-topic','rb-custom-image']
       .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     document.getElementById('rb-custom-correct').value = '0';
+    rbCustomImage = '';
     if (msgEl) { msgEl.textContent = `✅ שאלה נוספה! סה"כ ${result.total} שאלות בחדר`; msgEl.style.color = 'var(--green)'; }
     rbUpdateCounts(result.total);
     gwApplySession();
@@ -3438,7 +3468,7 @@ async function rbRefreshRoomList() {
 
   const data = await gwFetchRoomData();
   gwRoomData = null; // force fresh next time
-  const qs = data?.questions || [];
+  const qs = (data||{}).questions || [];
 
   rbUpdateCounts(qs.length);
 
@@ -3481,7 +3511,7 @@ async function rbDeleteRoomQ(idx) {
   // אם לא admin — ניתן למחוק רק שאלות אישיות (custom)
   if (!gwIsAdmin) {
     const data = await gwFetchRoomData();
-    const q = data?.questions?.[idx];
+    const q = ((data||{}).questions||[])[idx];
     if (!q || q._source !== 'custom') {
       showToast('🔒 ניתן למחוק רק שאלות אישיות שהוספת בעצמך');
       return;
@@ -3614,7 +3644,7 @@ function gwUpdateRoomScreen() {
   // עדכן ספירת שאלות + בורר קטגוריות
   gwFetchRoomData().then(data => {
     const el = document.getElementById('rs-q-count');
-    if (el) el.textContent = data?.questions?.length || 0;
+    if (el) el.textContent = ((data||{}).questions||[]).length || 0;
     rsLoadCatSection(data);
   });
 }
@@ -3624,7 +3654,7 @@ function gwUpdateRoomScreen() {
 async function rsLoadCatSection(roomData) {
   const section = document.getElementById('rs-cat-section');
   if (!section) return;
-  const questions = roomData?.questions || [];
+  const questions = (roomData||{}).questions || [];
   const allCats = [...new Set(questions.map(q => q.topic).filter(Boolean))].sort();
   if (!allCats.length) { section.style.display = 'none'; return; }
   section.style.display = '';
@@ -3715,7 +3745,7 @@ async function rbLoadRoomCats() {
   const container = document.getElementById('rb-room-cats');
   if (!section || !container) return;
   const data = await gwFetchRoomData();
-  const questions = data?.questions || [];
+  const questions = (data||{}).questions || [];
   const cats = [...new Set(questions.map(q => q.topic).filter(Boolean))].sort();
   if (!cats.length) { section.style.display = 'none'; return; }
   section.style.display = '';
@@ -4579,6 +4609,7 @@ function renderQuestion(d){
       <span class="qtopic">${d.topic||''}</span>
     </div>
     <div class="qtext">${d.question}</div>
+    ${d.image ? `<div style="text-align:center;margin:10px 0;"><img src="${d.image}" style="max-width:100%;max-height:280px;border-radius:12px;border:2px solid var(--border);object-fit:contain;" alt=""></div>` : ''}
     <div class="timer-row">
       <div class="tnum" id="tnum">22</div>
       <div class="tbar"><div class="tfill" id="tfill"></div></div>
@@ -4876,7 +4907,7 @@ function updateStatus(){
   const rs1 = document.getElementById('rs-st-p'); if(rs1) rs1.textContent=cnt;
   const rs2 = document.getElementById('rs-st-s'); if(rs2) rs2.textContent=stateText;
   // עדכן mode pill ב-room-screen
-  const rsp = document.getElementById('rs-mode-pill'); if(rsp) rsp.textContent = document.getElementById('admin-mode-pill')?.textContent || '—';
+  const rsp = document.getElementById('rs-mode-pill'); if(rsp) rsp.textContent = (document.getElementById('admin-mode-pill')||{}).textContent || '—';
 }
 
 // ✅ לחיצת אדמין ידנית על תשובה — מאפשרת בדיקה/סימולציה מיידית (לפני/אחרי קריין)
@@ -5045,7 +5076,7 @@ async function startGameFromRoom() {
   if (!gwRoomId) { showToast('⚠️ לא מחובר לחדר'); return; }
   if (!gameMode) { showToast('⚠️ יש לבחור מצב משחק תחילה — לחץ 🎮 בחר מצב'); goMode(); return; }
   const data = await gwFetchRoomData();
-  const qCount = data?.questions?.length || 0;
+  const qCount = ((data||{}).questions||[]).length || 0;
   const standaloneGames = ['reaction','number','wordchain','majority','blitz','spinwheel','doubledown','flashback','passnote','pyramid','guesssong','whoami','biblechain','whofirst','bracket'];
   if (!standaloneGames.includes(gameMode) && qCount === 0) {
     showToast('⚠️ אין שאלות בחדר — פתח בנאי חדר והוסף שאלות');
@@ -5253,7 +5284,7 @@ async function renderPhonesPanel() {
     } catch(e) {}
   }
 
-  const q = (document.getElementById('phones-search')?.value||'').trim().toLowerCase();
+  const q = ((document.getElementById('phones-search')||{}).value||'').trim().toLowerCase();
   const entries = Object.entries(merged).filter(([ph,nm]) =>
     !q || String(nm).toLowerCase().includes(q) || ph.includes(q)
   );
@@ -5298,15 +5329,15 @@ function startEditPhone(ph, currentName) {
   if (phoneInput) { phoneInput.value = ph; phoneInput.disabled = true; phoneInput.style.opacity='0.5'; }
   if (nameInput) { nameInput.value = currentName; nameInput.focus(); nameInput.select(); }
   if (btn) btn.textContent = '💾 עדכן שם';
-  const form = document.querySelector('#phones-panel .btn-primary')?.closest('div[style*="border-radius:12px"]');
+  var _pp = document.querySelector('#phones-panel .btn-primary'); const form = _pp && _pp.closest('div[style*="border-radius:12px"]');
   if (form) form.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
 async function addPhoneEntry() {
   const phoneInput = document.getElementById('phones-add-phone');
   const nameInput = document.getElementById('phones-add-name');
-  const ph = (phoneInput?.value||'').trim();
-  const nm = (nameInput?.value||'').trim();
+  const ph = ((phoneInput||{}).value||'').trim();
+  const nm = ((nameInput||{}).value||'').trim();
   if (!ph) { showToast('❌ חסר מספר טלפון'); if(phoneInput){phoneInput.disabled=false;phoneInput.style.opacity='';} return; }
   if (!nm) { showToast('❌ חסר שם'); return; }
 
@@ -5371,8 +5402,8 @@ async function deleteAllPhones() {
 function filterModes(query) {
   const q = query.trim().toLowerCase();
   document.querySelectorAll('.mode-card').forEach(card => {
-    const name = (card.dataset.name || card.querySelector('.mode-name')?.textContent || '').toLowerCase();
-    const desc = (card.querySelector('.mode-desc')?.textContent || '').toLowerCase();
+    const name = (card.dataset.name || (card.querySelector('.mode-name')||{}).textContent || '').toLowerCase();
+    const desc = ((card.querySelector('.mode-desc')||{}).textContent || '').toLowerCase();
     const show = !q || name.includes(q) || desc.includes(q);
     card.classList.toggle('hidden-card', !show);
   });
@@ -5395,6 +5426,39 @@ function setTheme(name) {
     ? document.querySelector(`.thbtn[onclick*="'${name}'"]`)
     : document.querySelector(`.thbtn[onclick*="setTheme('')"]`);
   if (match) match.classList.add('active');
+}
+
+// רקע מותאם אישית לחדר — קישור לתמונה (לא העלאת קובץ, כדי לא להוסיף תשתית אחסון חדשה)
+// קורא קובץ תמונה שנבחר מהמחשב, ממיר אותו ל-base64, ומעביר ל-setCustomBg/setCustomLogo
+// בדיוק כאילו זה "קישור" רגיל — כך שלא נדרש אחסון קבצים נפרד בשרת בכלל.
+function uploadCustomImage(file, applyFn) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('הקובץ גדול מדי (מקסימום 5MB). נסו תמונה קטנה יותר, או השתמשו בקישור.'); return; }
+  const reader = new FileReader();
+  reader.onload = () => applyFn(reader.result); // reader.result הוא כבר data:image/...;base64,....
+  reader.onerror = () => alert('שגיאה בקריאת הקובץ');
+  reader.readAsDataURL(file);
+}
+
+function setCustomBg(url) {
+  url = (url || '').trim();
+  document.body.style.backgroundImage = url ? `url('${url.replace(/'/g,"%27")}')` : '';
+  document.body.style.backgroundSize = url ? 'cover' : '';
+  document.body.style.backgroundPosition = url ? 'center' : '';
+  document.body.style.backgroundAttachment = url ? 'fixed' : '';
+  const input = document.getElementById('custom-bg-input');
+  if (input) input.value = url.startsWith('data:') ? '(קובץ הועלה ✓)' : url;
+  saveSettingToServer('trivia_bg_url', url);
+}
+
+// לוגו מותאם אישית לחדר — מוצג בפינת מסך המשחק
+function setCustomLogo(url) {
+  url = (url || '').trim();
+  const img = document.getElementById('custom-logo-img');
+  if (img) { img.src = url; img.style.display = url ? 'block' : 'none'; }
+  const input = document.getElementById('custom-logo-input');
+  if (input) input.value = url.startsWith('data:') ? '(קובץ הועלה ✓)' : url;
+  saveSettingToServer('trivia_logo_url', url);
 }
 
 // ========== FONT SIZE ==========
@@ -5589,6 +5653,11 @@ function saveTTSLogs() {
 
 // מוריד קובץ TXT עם רשימת כל מי שהתקשר למספר הטלפון של המשחק — מספר, שם (אם ידוע),
 // שעת התחברות, ומשך השיחה בפועל. מסודר מהחיבור האחרון לישן ביותר (כפי שהשרת כבר ממיין).
+// מוריד קובץ CSV (נפתח ישירות ב-Excel) עם תוצאות המשחק האחרון שהסתיים
+function exportResults() {
+  window.open('/export-results?key=' + encodeURIComponent(ADMIN_KEY), '_blank');
+}
+
 function downloadCalls() {
   fetch('/calls?key=' + encodeURIComponent(ADMIN_KEY)).then(r => r.json()).then(resp => {
     if (!resp.ok) { alert('שגיאה בשליפת רשימת השיחות'); return; }
@@ -5734,7 +5803,7 @@ function _ttsPlayServer(text, voiceId, done, isStale) {
     // קרא pause() כי כבר התחיל קול חדש) — זו לא תקלה אמיתית בשירות הקריינות, רק תופעת לוואי
     // רגילה של דפדפן ("interrupted by a call to pause()"). בלי הבדיקה הזו, notifyTtsFailure()
     // רץ גם על ביטולים תקינים ומציג למשתמש טוסט מבהיל ("שירות הקריינות לא הגיב") שלא נכון בפועל.
-    audio.onerror = (e) => { ttsLog('Server audio.onerror', e?.type); if (!(isStale && isStale())) notifyTtsFailure(); done(); };
+    audio.onerror = (e) => { ttsLog('Server audio.onerror', (e||{}).type); if (!(isStale && isStale())) notifyTtsFailure(); done(); };
     _edgeAudio = audio;
     audio.play()
       .then(() => {
@@ -5757,7 +5826,7 @@ function _ttsPlayServer(text, voiceId, done, isStale) {
         // narrator-ping — רק עבור TTS של שאלה, לא קולות תגובה/ספירה
         const currentRoundId = window._currentNarratorRoundId;
         const isQAudio = window._ttsIsQuestionAudio;
-        ttsLog('Server audio.play() OK', { duration: audio.duration?.toFixed(1) || '?', isQuestionAudio: isQAudio, roundId: currentRoundId || 'none' });
+        ttsLog('Server audio.play() OK', { duration: (audio.duration && audio.duration.toFixed(1)) || '?', isQuestionAudio: isQAudio, roundId: currentRoundId || 'none' });
         if (currentRoundId && isQAudio) {
           ttsLog('narrator-ping → sending to server', { roundId: currentRoundId });
           fetch('/narrator-ping', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ roundId: currentRoundId }) }).catch(e => {
@@ -5768,7 +5837,7 @@ function _ttsPlayServer(text, voiceId, done, isStale) {
         }
       })
       .catch(e => {
-        ttsLog('Server audio.play() FAILED', e?.message);
+        ttsLog('Server audio.play() FAILED', (e||{}).message);
         if (!(isStale && isStale())) notifyTtsFailure();
         done();
       });
@@ -5786,7 +5855,7 @@ function _ttsPlayServer(text, voiceId, done, isStale) {
       if (isStale && isStale()) { ttsLog('Server: TTS fetch done but cancelled (stale), discarding'); return; }
       ttsLog('Server: fetch OK, playing');
       doPlay(url);
-    }).catch(e => { ttsLog('Server: preloadEdge error', e?.message); notifyTtsFailure(); done(); });
+    }).catch(e => { ttsLog('Server: preloadEdge error', (e||{}).message); notifyTtsFailure(); done(); });
   }
 }
 
@@ -6142,9 +6211,11 @@ function openAddQ() {
   document.getElementById('qe-q').value = '';
   [0,1,2,3].forEach(i => document.getElementById('qe-a'+i).value = '');
   document.getElementById('qe-correct').value = '0';
+  qeCurrentImage = '';
+  document.getElementById('qe-image').value = '';
   rebuildTopicSelects();
   const cats = getAllCategories();
-  document.getElementById('qe-topic').value = cats[0]?.name || '';
+  document.getElementById('qe-topic').value = (cats[0]||{}).name || '';
   const modal = document.getElementById('qedit-single');
   modal.querySelector('h3').textContent = '➕ שאלה חדשה';
   modal.style.display = 'flex';
@@ -6212,12 +6283,17 @@ function renderQList() {
   `).join('');
 }
 
+let qeCurrentImage = ''; // הערך האמיתי (URL או base64) — לא תמיד זהה למה שמוצג בשדה הטקסט
+let rbCustomImage = ''; // כנ"ל, עבור טופס הוספת שאלה אישית בבונה החדר
+
 function editQ(idx) {
   const q = qeAll[idx]; if (!q) return;
   qeEditIdx = idx;
   document.getElementById('qe-q').value = q.q;
   [0,1,2,3].forEach(i => document.getElementById('qe-a'+i).value = q.a[i] || '');
   document.getElementById('qe-correct').value = q.correct;
+  qeCurrentImage = q.image || '';
+  document.getElementById('qe-image').value = qeCurrentImage.startsWith('data:') ? '(תמונה קיימת ✓)' : qeCurrentImage;
   rebuildTopicSelects();
   document.getElementById('qe-topic').value = q.topic;
   const modal = document.getElementById('qedit-single');
@@ -6240,7 +6316,7 @@ function saveQEdit() {
     // הוספת שאלה חדשה — רק מנהל
     fetch('/add-question', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({q,a,correct,topic, key:ADMIN_KEY})
+      body: JSON.stringify({q,a,correct,topic, image: qeCurrentImage || undefined, key:ADMIN_KEY})
     }).then(r=>r.json()).then(d=>{
       if (d.ok === false) { showToast('❌ ' + (d.error || 'שגיאה')); return; }
       showToast('✅ שאלה נוספה!'); closeQSingle();
@@ -6250,7 +6326,7 @@ function saveQEdit() {
     // עריכת שאלה קיימת — שולח key כי השרת עכשיו מוגן
     fetch('/questions/'+qeEditIdx, {
       method:'PUT', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({q,a,correct,topic, key:ADMIN_KEY})
+      body: JSON.stringify({q,a,correct,topic, image: qeCurrentImage || undefined, key:ADMIN_KEY})
     }).then(r=>r.json()).then(d=>{
       if (d.ok === false) { showToast('❌ ' + (d.error || 'אין הרשאה לעריכת מאגר')); return; }
       showToast('✅ שאלה עודכנה'); closeQSingle(); showQEditor();
@@ -6312,13 +6388,13 @@ function narratePlayerAnswer(d) {
   // הנכונה לכל השחקנים לפני שהזמן נגמר / לפני שכולם ענו. "נכון/לא נכון" נאמר רק
   // ב-revealAnswer (case 'reveal'), לא כאן. first/streak/vote נשארים — הם לא חושפים תוכן תשובה.
   if (d.mode === 'vote') {
-    pool = narratorPhrases.vote?.length ? narratorPhrases.vote : NARRATOR_VOTE;
+    pool = (narratorPhrases.vote && narratorPhrases.vote.length) ? narratorPhrases.vote : NARRATOR_VOTE;
   } else if (d.first) {
-    pool = narratorPhrases.first?.length ? narratorPhrases.first : NARRATOR_FIRST;
+    pool = (narratorPhrases.first && narratorPhrases.first.length) ? narratorPhrases.first : NARRATOR_FIRST;
   } else if (d.mode === 'blitz' && d.streak >= 3) {
-    pool = narratorPhrases.streak?.length ? narratorPhrases.streak : NARRATOR_STREAK;
+    pool = (narratorPhrases.streak && narratorPhrases.streak.length) ? narratorPhrases.streak : NARRATOR_STREAK;
   } else {
-    pool = narratorPhrases.answered?.length ? narratorPhrases.answered : NARRATOR_ANSWERED;
+    pool = (narratorPhrases.answered && narratorPhrases.answered.length) ? narratorPhrases.answered : NARRATOR_ANSWERED;
   }
   const tmpl = pool[Math.floor(Math.random() * pool.length)];
   const text = tmpl.replace('{name}', name).replace('{streak}', d.streak || '');
@@ -6581,7 +6657,7 @@ function renderApplauseTab() {
   const list = document.getElementById('narrator-phrases-list');
   const descEl = document.getElementById('narrator-cat-desc');
   const hint = document.getElementById('narrator-placeholder-hint');
-  const addRow = document.querySelector('[onclick="addNarratorPhrase()"]')?.closest('div[style*="flex-direction:column"]')?.parentElement;
+  var _anp = document.querySelector('[onclick="addNarratorPhrase()"]'); var _anpC = _anp && _anp.closest('div[style*="flex-direction:column"]'); const addRow = _anpC && _anpC.parentElement;
   if (descEl) descEl.textContent = 'שליטה על צלילי הכפיים שמתנגנים כשמכריזים על הזוכה בסוף המשחק.';
   if (hint) hint.textContent = '';
   // Hide the "add phrase" section
@@ -6781,7 +6857,7 @@ async function addNarratorPhrase() {
   inp.value = '';
   renderNarratorPhrases();
   const list = document.getElementById('narrator-phrases-list');
-  if (list) list.lastElementChild?.scrollIntoView({ behavior:'smooth' });
+  if (list && list.lastElementChild) list.lastElementChild.scrollIntoView({ behavior:'smooth' });
   showToast('✅ משפט נוסף!');
   if (ttsOn) speakQueued(val.replace('{name}','דוד').replace('{streak}','4'), 0.95, 1.05);
 }
@@ -6858,7 +6934,7 @@ async function saveNarratorEdit(i, val) {
 
 
 function listenNarratorPhrase(i) {
-  const ph = narratorPhrases[_currentNarratorCat]?.[i];
+  const ph = (narratorPhrases[_currentNarratorCat]||[])[i];
   if (!ph) return;
   const rawText = ph.replace('{name}','דוד').replace('{streak}','4');
   const prev = document.getElementById('narrator-preview-text');
@@ -6999,14 +7075,14 @@ function jumpMemory() {
 
 const SETTINGS_KEYS = ['trivia_theme','trivia_fs','trivia_voice','trivia_voice_rate','trivia_voice_pitch',
   'trivia_voice_tab','trivia_tts','trivia_narrator_v2','applauseSettings','mixedCats',
-  'trivia_custom_cats','trivia_cd_length','trivia_presets','trivia_zinger_chance'];
+  'trivia_custom_cats','trivia_cd_length','trivia_presets','trivia_zinger_chance','trivia_bg_url','trivia_logo_url'];
 
 // שמור הגדרה אחת לשרת — השרת הוא מקור האמת היחיד; localStorage משמש רק כגיבוי במצב לא מקוון
 // ✅ תיקון באג: מפתחות פר-חדר (קול/עיצוב/גופן/תדירות עקיצות) חייבים לעבור דרך הנתיב
 // המפורש /room-data/:roomId/settings כשמנהלים חדר — לא /settings הגלובלי. /settings
 // הגלובלי מסתמך על activeRoomId שמוגדר רק כשמשחק *כבר רץ בפועל*, אז שינוי הגדרות
 // מהפאנל *לפני* שהתחיל משחק (המצב הנפוץ) היה "בורח" בטעות לקובץ הגלובלי.
-const ROOM_SCOPED_SETTING_KEYS = ['trivia_voice', 'trivia_voice_rate', 'trivia_voice_pitch', 'trivia_theme', 'trivia_fs', 'trivia_zinger_chance'];
+const ROOM_SCOPED_SETTING_KEYS = ['trivia_voice', 'trivia_voice_rate', 'trivia_voice_pitch', 'trivia_theme', 'trivia_fs', 'trivia_zinger_chance', 'trivia_bg_url', 'trivia_logo_url'];
 // 🩹 תיקון: broadcast() בשרת שולח 'settings-changed' לכל המחשבים המחוברים — כולל בחזרה
 // למחשב ששלח את השינוי בעצמו! בלי הזיכרון הזה, המחשב ששינה הגדרה מקבל "הד" של עצמו,
 // ומגיב אליו כאילו הגיע ממחשב זר: מציג טוסט מטעה "עודכן ממחשב אחר" ומפעיל applySettings()
@@ -7094,6 +7170,8 @@ function applySettings(s) {
   if (!s) return;
   if (s['trivia_theme'] !== undefined) setTheme(s['trivia_theme'] || '');
   if (s['trivia_fs']    !== undefined) setFontSize(s['trivia_fs'] || 'md');
+  if (s['trivia_bg_url']   !== undefined) setCustomBg(s['trivia_bg_url'] || '');
+  if (s['trivia_logo_url'] !== undefined) setCustomLogo(s['trivia_logo_url'] || '');
 
   if (s['trivia_tts'] !== undefined) {
     ttsOn = s['trivia_tts'] === '1';
@@ -7180,6 +7258,8 @@ async function loadSettingsFromServer() {
     if (typeof serverLog === 'function') serverLog('⚠️', 'לא ניתן לטעון הגדרות מהשרת — שימוש זמני בעותק מקומי');
     setTheme(localStorage.getItem('trivia_theme') || '');
     setFontSize(localStorage.getItem('trivia_fs') || 'md');
+    setCustomBg(localStorage.getItem('trivia_bg_url') || '');
+    setCustomLogo(localStorage.getItem('trivia_logo_url') || '');
     if (localStorage.getItem('trivia_tts') === '1') {
       ttsOn = true;
       const btn = document.getElementById('btn-tts');
@@ -7834,7 +7914,7 @@ function showDDReveal(d) {
     const name = pl ? pl.name : '?';
     const res = p.ddResult;
     const modeIcon = p.ddMode === 'double' ? '💰' : '🛡️';
-    const resColor = res?.correct ? 'var(--green)' : 'var(--red)';
+    const resColor = (res && res.correct) ? 'var(--green)' : 'var(--red)';
     const ptsText = res ? (res.pts >= 0 ? `+${res.pts}` : `${res.pts}`) : '';
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s2);border-radius:10px;">
       <span style="font-size:1.1rem;">${modeIcon}</span>
@@ -8011,12 +8091,12 @@ async function saveCustomQuestion() {
   if (familyEditId) {
     await fetch('/family/questions/'+familyEditId, { method:'PUT',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({q, a, correct, setId: familyCurrentSetId, setName: set?.name||familyCurrentSetId}) });
+      body: JSON.stringify({q, a, correct, setId: familyCurrentSetId, setName: (set||{}).name||familyCurrentSetId}) });
     showToast('✅ שאלה עודכנה');
   } else {
     await fetch('/family/questions', { method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({q, a, correct, setId: familyCurrentSetId, setName: set?.name||familyCurrentSetId}) });
+      body: JSON.stringify({q, a, correct, setId: familyCurrentSetId, setName: (set||{}).name||familyCurrentSetId}) });
     showToast('✅ שאלה נוספה!');
   }
   closeCustomQModal();
