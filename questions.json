@@ -8622,5 +8622,53 @@
     ],
     "correct": 0,
     "topic": "ניגונים וזמירות"
+  },
+  {
+    "q": "איזה אתר טבע מוצג בתמונה?",
+    "a": [
+      "מפלי הניאגרה",
+      "הכנרת",
+      "ים המלח",
+      "נהר הירדן"
+    ],
+    "correct": 0,
+    "topic": "גאוגרפיה עולמית",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Niagara_Falls_hdr_01.jpg"
+  },
+  {
+    "q": "איזה מגדל מוצג בתמונה?",
+    "a": [
+      "מגדל אייפל",
+      "מגדל פיזה הנוטה",
+      "ביג בן",
+      "מגדל טוקיו"
+    ],
+    "correct": 0,
+    "topic": "גאוגרפיה עולמית",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Eiffel_Tower_01.jpg"
+  },
+  {
+    "q": "איזו חיה מוצגת בתמונה?",
+    "a": [
+      "פיל",
+      "קרנף",
+      "היפופוטם",
+      "ג'ירף"
+    ],
+    "correct": 0,
+    "topic": "מדע — ביולוגיה",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/African_Bush_Elephant.jpg"
+  },
+  {
+    "q": "איזה מגדל שעון מפורסם מוצג בתמונה?",
+    "a": [
+      "ביג בן",
+      "מגדל אייפל",
+      "מגדל פיזה הנוטה",
+      "מגדל טוקיו"
+    ],
+    "correct": 0,
+    "topic": "גאוגרפיה עולמית",
+    "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Big_Ben_London_closeup.jpg"
   }
 ]
