@@ -63,7 +63,7 @@ body{font-family:'Rubik',sans-serif;background:var(--bg);color:var(--text);font-
 ::-webkit-scrollbar-thumb{background:var(--muted);border-radius:10px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--gold);}
 
-.screen{position:fixed;inset:0;transition:opacity 0.4s,transform 0.4s;z-index:10;}
+.screen{position:fixed;top:0;right:0;bottom:0;left:0;transition:opacity 0.4s,transform 0.4s;z-index:10;}
 .screen.hidden{opacity:0;pointer-events:none;transform:scale(0.96);}
 
 /* ============ MODE SELECT SCREEN ============ */
@@ -73,7 +73,7 @@ body{font-family:'Rubik',sans-serif;background:var(--bg);color:var(--text);font-
   padding:30px 20px;z-index:30;
 }
 #mode-screen::before{
-  content:'';position:fixed;inset:0;
+  content:'';position:fixed;top:0;right:0;bottom:0;left:0;
   background:radial-gradient(ellipse at 20% 30%,rgba(65,105,225,0.14) 0%,transparent 55%),
              radial-gradient(ellipse at 80% 70%,rgba(139,92,246,0.12) 0%,transparent 55%),
              radial-gradient(ellipse at 50% 100%,rgba(245,200,66,0.06) 0%,transparent 40%);
@@ -114,12 +114,12 @@ body{font-family:'Rubik',sans-serif;background:var(--bg);color:var(--text);font-
 }
 @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:none}}
 .mode-card::after{
-  content:'';position:absolute;inset:0;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;
   background:radial-gradient(circle at 50% 0%,currentColor,transparent 70%);
   opacity:0;transition:opacity 0.22s;
 }
 .mode-card:hover{transform:translateY(-5px) scale(1.02);border-color:currentColor;
-  box-shadow:0 12px 36px -4px color-mix(in srgb,currentColor 30%,transparent);}
+  box-shadow:0 12px 36px -4px currentColor;}
 .mode-card:hover::after{opacity:0.06;}
 .mode-card:active{transform:translateY(-2px) scale(0.99);}
 .mode-card.hidden-card{display:none;}
@@ -152,7 +152,7 @@ body{font-family:'Rubik',sans-serif;background:var(--bg);color:var(--text);font-
 
 /* ===== CATEGORY PICKER OVERLAY ===== */
 #cat-picker-overlay{
-  position:fixed;inset:0;z-index:9999;
+  position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;
   background:rgba(7,7,26,0.92);
   display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity 0.25s;
@@ -191,7 +191,7 @@ body{font-family:'Rubik',sans-serif;background:var(--bg);color:var(--text);font-
 /* ============ ADMIN SCREEN ============ */
 #admin-screen{background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:20;}
 #admin-screen::before{
-  content:'';position:fixed;inset:0;
+  content:'';position:fixed;top:0;right:0;bottom:0;left:0;
   background:radial-gradient(ellipse at 15% 30%,rgba(65,105,225,0.08) 0%,transparent 55%),
              radial-gradient(ellipse at 85% 70%,rgba(139,92,246,0.06) 0%,transparent 55%);
   pointer-events:none;
@@ -262,7 +262,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 
 /* ===== COUNTDOWN OVERLAY ===== */
 #countdown-overlay {
-  position:fixed;inset:0;z-index:9999;
+  position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;
   background:rgba(7,7,26,0.97);
   display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;
 }
@@ -298,7 +298,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 .cd-sub{color:var(--muted);font-size:0.95rem;letter-spacing:1px;animation:cdIn 0.5s ease 0.3s both;}
 
 /* ===== FIRST ANSWER BANNER ===== */
-#first-banner{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;pointer-events:none;background:rgba(7,7,26,0.75);}
+#first-banner{position:fixed;top:0;right:0;bottom:0;left:0;z-index:40;display:none;align-items:center;justify-content:center;pointer-events:none;background:rgba(7,7,26,0.75);}
 .first-inner{display:flex;flex-direction:column;align-items:center;gap:8px;animation:fBurst 0.5s cubic-bezier(0.34,1.56,0.64,1);}
 @keyframes fBurst{0%{transform:scale(0.2);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
 .first-emoji{font-size:5.5rem;animation:fSpin 0.55s ease;}
@@ -314,18 +314,18 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 
 /* ============ LOBBY SCREEN ============ */
 #lobby-screen{
-  position:fixed;inset:0;z-index:25;
+  position:fixed;top:0;right:0;bottom:0;left:0;z-index:25;
   background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   overflow:hidden;
 }
 #lobby-screen::before{
-  content:'';position:absolute;inset:0;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;
   background:radial-gradient(ellipse at 25% 35%,rgba(65,105,225,0.18) 0%,transparent 55%),
              radial-gradient(ellipse at 75% 65%,rgba(139,92,246,0.14) 0%,transparent 55%),
              radial-gradient(ellipse at 50% 80%,rgba(245,200,66,0.05) 0%,transparent 40%);
 }
-#bubbles-c{position:fixed;inset:0;pointer-events:none;z-index:1;}
+#bubbles-c{position:fixed;top:0;right:0;bottom:0;left:0;pointer-events:none;z-index:1;}
 .bubble{position:absolute;display:flex;flex-direction:column;align-items:center;gap:9px;pointer-events:none;will-change:transform;}
 /* Collision shape animations */
 @keyframes squishH{0%{transform:scale(1,1)}20%{transform:scale(1.5,0.6)}55%{transform:scale(0.85,1.2)}80%{transform:scale(1.08,0.95)}100%{transform:scale(1,1)}}
@@ -344,16 +344,16 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
   display:flex;align-items:center;justify-content:center;
   font-weight:900;font-size:2.4rem;border:3px solid currentColor;
   position:relative;
-  background:radial-gradient(circle at 35% 35%, color-mix(in srgb, currentColor 40%, transparent), color-mix(in srgb, currentColor 8%, transparent));
-  box-shadow:0 0 40px color-mix(in srgb, currentColor 55%, transparent), inset 0 2px 0 rgba(255,255,255,0.25);
+  background:radial-gradient(circle at 35% 35%, currentColor, transparent 70%);
+  box-shadow:0 0 40px currentColor, inset 0 2px 0 rgba(255,255,255,0.25);
   transition:border-radius 0.3s ease;
 }
 .b-av::after,.b-av::before{
   content:'';position:absolute;border-radius:50%;border:1.5px solid currentColor;
   animation:ripple 2.8s ease-in-out infinite;
 }
-.b-av::after{inset:-8px;opacity:0.22;}
-.b-av::before{inset:-16px;opacity:0.1;animation-delay:0.9s;}
+.b-av::after{top:-8px;right:-8px;bottom:-8px;left:-8px;opacity:0.22;}
+.b-av::before{top:-16px;right:-16px;bottom:-16px;left:-16px;opacity:0.1;animation-delay:0.9s;}
 .b-av-shine{
   position:absolute;top:12%;left:18%;width:28%;height:28%;
   background:radial-gradient(circle, rgba(255,255,255,0.6) 0%, transparent 70%);
@@ -377,7 +377,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 }
 /* ===== WINNER SCREEN ===== */
 #winner-overlay{
-  position:fixed;inset:0;z-index:9998;
+  position:fixed;top:0;right:0;bottom:0;left:0;z-index:9998;
   background:radial-gradient(ellipse at center, rgba(7,7,26,0.97) 0%, rgba(0,0,0,0.99) 100%);
   display:none;flex-direction:column;align-items:center;justify-content:center;
   overflow:hidden;
@@ -386,7 +386,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 .winner-crown{font-size:5rem;animation:crownBounce 0.6s cubic-bezier(0.34,1.8,0.64,1) both;filter:drop-shadow(0 0 30px #f5c842);}
 @keyframes crownBounce{0%{transform:scale(0) rotate(-20deg)}100%{transform:scale(1) rotate(0deg)}}
 .winner-glow{
-  position:absolute;inset:0;
+  position:absolute;top:0;right:0;bottom:0;left:0;
   background:radial-gradient(ellipse at center, rgba(245,200,66,0.15) 0%, transparent 60%);
   animation:glowPulse 1.5s ease-in-out infinite alternate;
 }
@@ -407,7 +407,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
   animation:fadeU 0.5s 0.8s both;
   text-shadow:0 0 20px rgba(245,200,66,0.5);
 }
-.winner-stars{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.winner-stars{position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;overflow:hidden;}
 .wstar{position:absolute;font-size:1.5rem;animation:starFloat var(--dur,3s) var(--del,0s) ease-in-out infinite alternate;}
 @keyframes starFloat{0%{transform:translate(var(--x0),var(--y0)) rotate(0deg) scale(0.8);opacity:0.7}100%{transform:translate(var(--x1),var(--y1)) rotate(180deg) scale(1.2);opacity:1}}
 .winner-close{margin-top:30px;animation:fadeU 0.5s 1.2s both;}
@@ -419,7 +419,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
   66%{transform:translate(-12px,14px) scale(0.97);}
 }
 #lobby-screen::after{
-  content:'';position:absolute;inset:0;pointer-events:none;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;
   background:
     radial-gradient(circle at 60% 20%,rgba(245,200,66,0.07) 0%,transparent 38%),
     radial-gradient(circle at 30% 75%,rgba(65,105,225,0.09) 0%,transparent 35%);
@@ -461,7 +461,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 /* ============ GAME SCREEN ============ */
 #game-screen{background:var(--bg);z-index:20;display:flex;flex-direction:column;}
 #game-screen::before{
-  content:'';position:absolute;inset:0;
+  content:'';position:absolute;top:0;right:0;bottom:0;left:0;
   background:radial-gradient(ellipse at 10% 15%,rgba(65,105,225,0.1) 0%,transparent 50%),
              radial-gradient(ellipse at 90% 85%,rgba(139,92,246,0.08) 0%,transparent 50%);
   pointer-events:none;
@@ -541,7 +541,7 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 @keyframes popIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
 
 /* scores overlay */
-#sco{position:absolute;inset:0;z-index:30;background:rgba(7,7,26,0.97);
+#sco{position:absolute;top:0;right:0;bottom:0;left:0;z-index:30;background:rgba(7,7,26,0.97);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   animation:fadeI 0.5s ease;}
 @keyframes fadeI{from{opacity:0}to{opacity:1}}
@@ -561,12 +561,12 @@ button, .btn, [onclick], .chip, .cat-chip, .rb-cat-chip { touch-action: manipula
 
 /* ===== FAMILY OVERLAY ===== */
 #family-overlay {
-  position:fixed;inset:0;z-index:55;background:var(--bg);
+  position:fixed;top:0;right:0;bottom:0;left:0;z-index:55;background:var(--bg);
   display:none;flex-direction:column;align-items:center;
   padding:20px;overflow-y:auto;
 }
 #family-overlay::before {
-  content:'';position:fixed;inset:0;pointer-events:none;
+  content:'';position:fixed;top:0;right:0;bottom:0;left:0;pointer-events:none;
   background:radial-gradient(ellipse at 30% 20%,rgba(255,183,77,0.1) 0%,transparent 55%),
              radial-gradient(ellipse at 70% 80%,rgba(255,138,0,0.07) 0%,transparent 55%);
 }
@@ -608,7 +608,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
   overflow-y:auto;z-index:50;
 ">
   <div style="
-    position:absolute;inset:0;pointer-events:none;
+    position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;
     background:radial-gradient(ellipse at 30% 40%,rgba(65,105,225,0.18) 0%,transparent 55%),
                radial-gradient(ellipse at 70% 70%,rgba(245,200,66,0.12) 0%,transparent 50%);
     animation:bgPulse 8s ease-in-out infinite alternate;
@@ -963,7 +963,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 
 
 <!-- PAUSE OVERLAY -->
-<div id="pause-overlay" style="display:none;position:fixed;inset:0;z-index:45;background:rgba(7,7,26,0.88);backdrop-filter:blur(6px);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+<div id="pause-overlay" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:45;background:rgba(7,7,26,0.88);backdrop-filter:blur(6px);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="font-size:5rem;animation:cdPop 0.5s cubic-bezier(0.34,1.56,0.64,1);">⏸</div>
   <div style="font-family:'Frank Ruhl Libre',serif;font-size:3rem;font-weight:900;color:var(--gold);">המשחק מושהה</div>
   <div style="color:var(--muted);font-size:1rem;letter-spacing:2px;">לחץ המשך להמשיך</div>
@@ -1235,7 +1235,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </div><!-- /room-screen -->
 
 <!-- ROOM BUILDER OVERLAY -->
-<div id="room-builder-overlay" style="display:none;position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;padding:20px;">
+<div id="room-builder-overlay" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;background:var(--bg);overflow-y:auto;padding:20px;">
   <div style="max-width:860px;margin:0 auto;">
 
     <!-- כותרת -->
@@ -1409,7 +1409,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </div>
 
 <!-- LOBBY -->
-<div id="countdown-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(7,7,26,0.97);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
+<div id="countdown-overlay" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:9999;background:rgba(7,7,26,0.97);flex-direction:column;align-items:center;justify-content:center;gap:16px;">
   <div class="cd-title">המשחק מתחיל בעוד</div>
   <div class="cd-mode" id="cd-mode-badge"></div>
   <div class="cd-players" id="cd-players"></div>
@@ -1493,7 +1493,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 <!-- כפתור צף מוסר — הלוגים נגישים דרך 📋 בסרגל הכלים למעלה -->
 
 <!-- CUSTOM GAME MANAGER -->
-<div id="custom-game-overlay" style="display:none;position:fixed;inset:0;z-index:55;background:var(--bg);flex-direction:column;align-items:center;padding:20px;overflow-y:auto;">
+<div id="custom-game-overlay" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:55;background:var(--bg);flex-direction:column;align-items:center;padding:20px;overflow-y:auto;">
   <div style="position:relative;z-index:1;width:100%;max-width:780px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="font-family:'Frank Ruhl Libre',serif;font-size:clamp(1.8rem,5vw,2.8rem);font-weight:900;background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">✨ משחק מותאם אישית</div>
@@ -1540,7 +1540,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </div>
 
 <!-- CUSTOM QUESTION MODAL -->
-<div id="cg-q-modal" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px;">
+<div id="cg-q-modal" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:70;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--s1);border:1px solid rgba(167,139,250,0.35);border-radius:18px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
     <h3 id="cg-q-modal-title" style="font-family:'Frank Ruhl Libre',serif;font-size:1.3rem;font-weight:900;color:#a78bfa;margin-bottom:16px;">➕ שאלה חדשה</h3>
     <div style="display:flex;flex-direction:column;gap:9px;">
@@ -1570,7 +1570,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 <div id="fam-q-modal" style="display:none;"></div>
 
 <!-- ADD CATEGORY MODAL -->
-<div id="add-cat-modal" style="display:none;position:fixed;inset:0;z-index:75;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px;">
+<div id="add-cat-modal" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:75;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--s1);border:2px solid rgba(168,85,247,0.45);border-radius:18px;padding:26px;width:100%;max-width:400px;">
     <h3 style="font-family:'Frank Ruhl Libre',serif;font-size:1.3rem;font-weight:900;margin-bottom:6px;background:linear-gradient(135deg,#e879f9,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🏷️ הוסף קטגוריה</h3>
     <p style="color:var(--muted);font-size:0.85rem;margin-bottom:14px;">הקטגוריה תופיע בפילטר ובבחירת נושא לשאלות</p>
@@ -1586,7 +1586,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </div>
 
 <!-- NARRATOR MANAGER PANEL -->
-<div id="narrator-panel" style="display:none;position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;padding:20px;">
+<div id="narrator-panel" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:70;background:var(--bg);overflow-y:auto;padding:20px;">
   <div style="max-width:860px;margin:0 auto;">
 
     <!-- Header -->
@@ -1645,7 +1645,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 
 
 <!-- ===== PHONES PANEL ===== -->
-<div id="phones-panel" style="display:none;position:fixed;inset:0;z-index:70;background:var(--bg);overflow-y:auto;padding:20px;">
+<div id="phones-panel" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:70;background:var(--bg);overflow-y:auto;padding:20px;">
   <div style="max-width:600px;margin:0 auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <h2 id="phones-panel-title" style="font-family:'Frank Ruhl Libre',serif;font-size:1.7rem;font-weight:900;color:#34d399;margin:0;">📱 אנשי קשר</h2>
@@ -1701,7 +1701,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </style>
 
 <!-- MEMORY PANEL OVERLAY -->
-<div id="memory-panel" style="display:none;position:fixed;inset:0;z-index:65;background:var(--bg);overflow-y:auto;padding:20px;">
+<div id="memory-panel" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:65;background:var(--bg);overflow-y:auto;padding:20px;">
   <div style="max-width:700px;margin:0 auto;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
       <h2 style="font-family:'Frank Ruhl Libre',serif;font-size:1.6rem;font-weight:900;color:var(--gold);">🧠 ניהול זיכרון שאלות</h2>
@@ -1759,7 +1759,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </div>
 
 <!-- QUESTIONS EDITOR -->
-<div id="qeditor" style="display:none;position:fixed;inset:0;z-index:60;background:var(--bg);overflow-y:auto;padding:20px;">
+<div id="qeditor" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;background:var(--bg);overflow-y:auto;padding:20px;">
   <div style="max-width:860px;margin:0 auto;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;">
       <h2 style="font-family:'Frank Ruhl Libre',serif;font-size:1.6rem;font-weight:900;color:var(--gold);">📝 עריכת שאלות</h2>
@@ -1774,7 +1774,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
 </div>
 
 <!-- EDIT SINGLE QUESTION -->
-<div id="qedit-single" style="display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px;">
+<div id="qedit-single" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:70;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:500px;">
     <h3 style="font-family:'Frank Ruhl Libre',serif;font-size:1.3rem;font-weight:900;color:var(--gold);margin-bottom:16px;">✏️ עריכת שאלה</h3>
     <div style="display:flex;flex-direction:column;gap:8px;">
@@ -5946,7 +5946,7 @@ function showNarratorDim() {
   if (!el) {
     el = document.createElement('div');
     el.id = 'narrator-dim-overlay';
-    el.style.cssText = 'position:fixed;inset:0;z-index:44;background:rgba(7,7,26,0.78);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity 0.3s;';
+    el.style.cssText = 'position:fixed;top:0;right:0;bottom:0;left:0;z-index:44;background:rgba(7,7,26,0.78);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity 0.3s;';
     el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;"><div style="font-size:3rem;animation:cdPop 0.5s cubic-bezier(0.34,1.56,0.64,1);">🎙️</div><div style="font-family:\'Frank Ruhl Libre\',serif;font-size:1.4rem;font-weight:700;color:var(--gold);letter-spacing:2px;">הקשיבו לשאלה...</div></div>';
     document.body.appendChild(el);
   }
@@ -6676,7 +6676,7 @@ function renderApplauseTab() {
         </div>
         <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
           <input type="checkbox" id="apl-enabled" ${s.enabled ? 'checked' : ''} onchange="applauseSettings.enabled=this.checked;saveApplauseSettings()" style="opacity:0;width:0;height:0;">
-          <span style="position:absolute;inset:0;background:${s.enabled ? 'var(--purple)' : 'var(--s2)'};border-radius:26px;transition:0.3s;"></span>
+          <span style="position:absolute;top:0;right:0;bottom:0;left:0;background:${s.enabled ? 'var(--purple)' : 'var(--s2)'};border-radius:26px;transition:0.3s;"></span>
           <span style="position:absolute;top:3px;${s.enabled ? 'right' : 'left'}:3px;width:20px;height:20px;background:white;border-radius:50%;transition:0.3s;"></span>
         </label>
       </div>
@@ -8325,7 +8325,7 @@ function maybeAddBracketBanner(d) {
   </div>
 </div>
 <!-- ===== VOICE PANEL ===== -->
-<div id="voice-panel-overlay" onclick="closeVoicePanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;"></div>
+<div id="voice-panel-overlay" onclick="closeVoicePanel()" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,0.55);z-index:9000;"></div>
 <div id="voice-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9001;background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px 18px 16px;width:min(96vw,360px);direction:rtl;">
 
   <!-- כותרת -->
@@ -8366,7 +8366,7 @@ function maybeAddBracketBanner(d) {
 </div>
 
 <!-- ✅ פאנל ניהול עקיצות/מחמאות פר-חדר — ניתן להשהות פריטים קבועים (לא למחוק!) ולהוסיף/למחוק משפטים אישיים -->
-<div id="phrase-panel-overlay" onclick="closePhrasePanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9000;"></div>
+<div id="phrase-panel-overlay" onclick="closePhrasePanel()" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(0,0,0,0.55);z-index:9000;"></div>
 <div id="phrase-panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9001;background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:20px 18px 16px;width:min(96vw,440px);max-height:85vh;overflow-y:auto;direction:rtl;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
     <h3 style="margin:0;font-size:1.05rem;">🎭 עקיצות ומחמאות — חדר</h3>
