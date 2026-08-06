@@ -1423,6 +1423,7 @@ position:fixed;pointer-events:none;z-index:9990;width:9px;height:9px;border-radi
     <div class="lobby-mode-badge" id="lobby-badge">—</div>
     <div class="lobby-call">📞 0747955610 ← לחייג  </div>
     <div class="lobby-cnt">מחוברים: <span id="lobby-cnt">0</span> שחקנים</div>
+    <div id="lobby-players" style="display:flex;flex-direction:column;gap:6px;width:100%;max-width:420px;margin:10px auto;"></div>
     <div class="lobby-btns">
       <button class="btn btn-ghost btn-sm" onclick="goAdmin()">⚙️ ניהול</button>
       <button class="btn btn-ghost btn-sm" onclick="goMode()">🎮 שנה מצב</button>
@@ -4565,7 +4566,7 @@ function renderPlayers(){
   const vals=Object.values(players);
   document.getElementById('lobby-cnt').textContent=vals.length;
   // ✅ מרנדר גם לתוך מסך החדר (rs-players), לא רק למסך המנהל (adm-players)
-  ['adm-players','rs-players'].forEach(elId=>{
+  ['adm-players','rs-players','lobby-players'].forEach(elId=>{
     const el=document.getElementById(elId);
     if(!el) return;
     if(vals.length===0){el.innerHTML='<div class="no-p">ממתין לשחקנים...<br><small>חייגו לשלוחה 8</small></div>';return;}
