@@ -878,7 +878,7 @@ function showQuestion() {
     fetchTTS(revealText, voice, _lastClientSpeed).catch(() => {});
     log('🔮💡', `pre-warming מוקדם מאוד תשובה נכונה לשאלה ${currentQuestion + 1}: "${revealText.slice(0,40)}"`);
   })();
-  broadcast({ type: 'question', index: currentQuestion, total: questions.length, question: q.q, answers: q.a, topic: q.topic, mode: gameMode, timeLimit, roundId });
+  broadcast({ type: 'question', index: currentQuestion, total: questions.length, question: q.q, answers: q.a, topic: q.topic, mode: gameMode, timeLimit, roundId, image: q.image || null });
   log('🎙️', `שאלה ${currentQuestion + 1}: ממתין ל-narrator-ready (roundId=${roundId}) לפני הפעלת הטיימר האמיתי — fallback אם לא מגיע תוך ${NARRATOR_FALLBACK_MS}ms`);
 
   // ✅ תיקון סנכרון קריין/טיימר: לא מפעילים יותר את questionTimer/startTimer באופן מיידי.
@@ -1060,9 +1060,16 @@ function advanceToNextQuestion(rRoundId) {
   setTimeout(() => { currentQuestion++; showQuestion(); }, extraWait);
 }
 
+let lastGameResults = null; // תמונת מצב של תוצאות המשחק האחרון שהסתיים — נשמר כדי שאפשר לייצא גם אחרי שהניקוד מתאפס למשחק הבא
+
 function endGame() {
   gameState = 'scores';
   const sorted = Object.values(players).sort((a, b) => b.score - a.score);
+  lastGameResults = {
+    endedAt: new Date().toISOString(),
+    mode: gameMode,
+    players: sorted.map(p => ({ name: p.name, phone: p.phone, score: p.score, correct: p.correct }))
+  };
   broadcast({ type: 'scores', players: sorted, mode: gameMode });
 }
 
@@ -1079,7 +1086,7 @@ function resetGame() {
 
 // ===== EXPRESS =====
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '8mb' })); // הוגדל מברירת המחדל (100kb) כדי לתמוך בהעלאת תמונות רקע/לוגו כ-base64
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('ngrok-skip-browser-warning', 'true');
@@ -1113,6 +1120,7 @@ yemotRouter.get('/yemot', async (call) => {
     }
     const colorIdx = Object.keys(players).length % 6;
     players[callId] = { callId, phone, name, score: 0, correct: 0, answered: false, color: colorIdx, _chosen: null, connectedAt: Date.now() };
+    log('📞', `${name ? name + ' (' + phone + ')' : phone} התחבר/ה לטלפון — סה"כ ${Object.keys(players).length} מחוברים`);
     broadcast({ type: 'playerJoin', player: players[callId] });
     // שמור במאגר הגלובלי רק אם השם לא בא מאנשי קשר של חדר
     const inRoomContacts = activeRoomId && loadRoomData(activeRoomId)?.contacts?.[phone];
@@ -1474,11 +1482,13 @@ app.delete('/names/:phone', (req, res) => {
 });
 
 app.post('/add-question', (req, res) => {
-  const { q, a, correct, topic, key } = req.body;
+  const { q, a, correct, topic, image, key } = req.body;
   if (key !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'גישה אסורה' });
   if (!q || !a || a.length !== 4 || correct === undefined || !topic) { res.status(400).json({ ok: false }); return; }
   const qs = loadQuestions();
-  qs.push({ q, a, correct, topic });
+  const newQ = { q, a, correct, topic };
+  if (image) newQ.image = image; // שדה אופציונלי — תמונת רקע לשאלה (URL או base64)
+  qs.push(newQ);
   writeFileMirrored(QUESTIONS_FILE, JSON.stringify(qs, null, 2));
   res.json({ ok: true, total: qs.length });
 });
@@ -1516,7 +1526,9 @@ app.put('/questions/:idx', (req, res) => {
   if (key !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'גישה אסורה — נדרשת סיסמת מנהל' });
   const qs = loadQuestions();
   if (idx < 0 || idx >= qs.length) { res.status(404).json({ ok: false }); return; }
+  const { image } = req.body;
   qs[idx] = { q, a, correct, topic };
+  if (image) qs[idx].image = image; // שדה אופציונלי — תמונת רקע לשאלה (URL או base64)
   writeFileMirrored(QUESTIONS_FILE, JSON.stringify(qs, null, 2));
   log('✏️', `שאלה ${idx} עודכנה ע"י מנהל`);
   res.json({ ok: true });
@@ -1552,6 +1564,19 @@ app.get('/', (req, res) => {
 app.get('/visitors', (req, res) => {
   if (req.query.key !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'גישה אסורה — נדרשת סיסמת מנהל' });
   res.json({ ok: true, count: visitorRing.length, visitors: visitorRing.slice().reverse() }); // חדש קודם
+});
+
+// ייצוא תוצאות המשחק האחרון שהסתיים כ-CSV (נפתח ישירות ב-Excel/Google Sheets)
+app.get('/export-results', (req, res) => {
+  if (req.query.key !== MASTER_KEY) return res.status(403).json({ ok: false, error: 'גישה אסורה — נדרשת סיסמת מנהל' });
+  if (!lastGameResults) return res.status(404).json({ ok: false, error: 'אין עדיין תוצאות של משחק שהסתיים' });
+  const BOM = '\uFEFF'; // כדי שאקסל יציג עברית נכון
+  const rows = [['שם', 'טלפון', 'ניקוד', 'תשובות נכונות']];
+  lastGameResults.players.forEach(p => rows.push([p.name || '', p.phone || '', p.score, p.correct]));
+  const csv = BOM + rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="trivia-results-${lastGameResults.endedAt.slice(0,10)}.csv"`);
+  res.send(csv);
 });
 
 // נתיב קליל לבדיקת "השרת ער" (keep-alive/uptime pinger) — בכוונה לא מחזיר את trivia.html
@@ -1827,7 +1852,7 @@ app.get('/tts-voices', (req, res) => {
 // ✅ מפתחות אלה "פר-חדר" — כשיש חדר פעיל, הם נשמרים בתוך נתוני החדר (לא בקובץ הגלובלי),
 // כדי שבעל חדר יוכל להתאים אישית את הקריין/עיצוב של החדר שלו בלי להשפיע על חדרים אחרים
 // או על משחקים מהמאגר הכללי. שאר ההגדרות (למשל TTS on/off, presets) נשארות גלובליות.
-const ROOM_SCOPED_SETTING_KEYS = ['trivia_voice', 'trivia_voice_rate', 'trivia_voice_pitch', 'trivia_theme', 'trivia_fs', 'trivia_zinger_chance'];
+const ROOM_SCOPED_SETTING_KEYS = ['trivia_voice', 'trivia_voice_rate', 'trivia_voice_pitch', 'trivia_theme', 'trivia_fs', 'trivia_zinger_chance', 'trivia_bg_url', 'trivia_logo_url'];
 
 app.get('/settings', (req, res) => {
   if (!activeRoomId) return res.json(appSettings);
@@ -2240,11 +2265,12 @@ app.post('/room-data/:roomId/add-from-pool', checkRoomAuth, (req, res) => {
 // הוסף שאלה ידנית לחדר
 app.post('/room-data/:roomId/add-custom', checkRoomAuth, (req, res) => {
   const { roomId } = req.params;
-  const { q, a, correct, topic } = req.body || {};
+  const { q, a, correct, topic, image } = req.body || {};
   if (!q || !Array.isArray(a) || a.length < 2) return res.json({ ok: false, error: 'שאלה לא תקינה' });
 
   const data = loadRoomData(roomId);
   const newQ = { q, a, correct: correct || 0, topic: topic || 'אישי', _source: 'custom', _id: Date.now() };
+  if (image) newQ.image = image; // שדה אופציונלי — תמונת רקע לשאלה (URL או base64)
   data.questions.push(newQ);
   saveRoomData(roomId, data);
   res.json({ ok: true, question: newQ, total: data.questions.length });
@@ -3193,7 +3219,7 @@ function nextFamilyRound() {
   if (familyRound >= familyQuestions.length) { endGame(); return; }
   const q = familyQuestions[familyRound]; familyRound++;
   Object.values(players).forEach(p => { p.answered = false; p._chosen = null; });
-  broadcast({ type: 'question', index: familyRound - 1, total: familyQuestions.length, question: q.q, answers: q.a, topic: '👨‍👩‍👧 ' + familySetName, mode: 'family', timeLimit: 25 });
+  broadcast({ type: 'question', index: familyRound - 1, total: familyQuestions.length, question: q.q, answers: q.a, topic: '👨‍👩‍👧 ' + familySetName, mode: 'family', timeLimit: 25, image: q.image || null });
   clearTimeout(familyTimer);
   familyTimer = setTimeout(() => {
     const q = familyQuestions[familyRound - 1];
