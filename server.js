@@ -1090,6 +1090,12 @@ app.use(express.json({ limit: '8mb' })); // הוגדל מברירת המחדל (
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('ngrok-skip-browser-warning', 'true');
+  // לוג לכל בקשה נכנסת, חוץ מ-polling רועש (SSE + עמוד התיעודים החי) — כדי לתפוס
+  // כל ניסיון חיבור, כולל אם ימות המשיח בטעות פונה לכתובת אחרת מהצפוי (לא /yemot).
+  const _quietPaths = ['/events', '/live-calls', '/visitors', '/calls', '/health'];
+  if (!_quietPaths.includes(req.path)) {
+    log('🌐', `${req.method} ${req.path}${Object.keys(req.query).length ? ' ?' + JSON.stringify(req.query) : ''}`);
+  }
   next();
 });
 
@@ -1099,6 +1105,7 @@ yemotRouter.get('/yemot', async (call) => {
   const phone = call.phone;
   const callId = call.callId;
   const _callStartTime = new Date();
+  log('☎️', `שיחה נכנסה ל-/yemot — טלפון: ${phone}, callId: ${callId}, כבר קיים ב-players: ${!!players[callId]}`);
   if (!players[callId]) {
     // מחק שחקן ישן עם אותו מספר טלפון (חיוג מחדש)
     const oldEntry = Object.values(players).find(p => p.phone === phone && p.callId !== callId);
