@@ -1760,12 +1760,49 @@ function _fetchEspeakFallback(text, voiceKey, speed) {
   });
 }
 
+// ===== "מרוץ כפול" (hedged request) ל-edge-tts =====
+// אם הבקשה הראשונה לא עונה תוך TTS_HEDGE_DELAY_MS, יורים בקשה שנייה זהה (אותו טקסט/קול/מהירות)
+// במקביל, ומשתמשים בתשובה של מי שחוזר קודם. אין כאן שום פשרה על איכות — שתי הבקשות משתמשות
+// באותו מנוע נוירוני (edge-tts) בדיוק. זה מטפל ב"גמגומי רשת" חד-פעמיים מול שרתי מיקרוסופט,
+// בלי לרדת לגיבוי הרובוטי (espeak-ng) שנשמר עכשיו רק למקרה שגם שתי הבקשות נכשלות.
+const TTS_HEDGE_DELAY_MS = 2000;
+function _fetchEdgeTTSHedged(text, profile, speed) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let launched = 1;
+    let failed = 0;
+    let hedgeTimer = null;
+
+    const attempt = (isHedge) => {
+      _fetchEdgeTTS(text, profile, speed).then(result => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(hedgeTimer);
+        if (isHedge) log('🏇✅', `TTS hedge: הבקשה השנייה (המקבילה) ניצחה במרוץ: "${text.slice(0, 30)}"`);
+        resolve(result);
+      }).catch(err => {
+        if (settled) return;
+        failed++;
+        if (failed >= launched) { settled = true; clearTimeout(hedgeTimer); reject(err); }
+      });
+    };
+
+    attempt(false); // בקשה ראשונה, מיידית
+    hedgeTimer = setTimeout(() => {
+      if (settled) return;
+      launched = 2;
+      log('🏇', `TTS hedge: אין תשובה תוך ${TTS_HEDGE_DELAY_MS}ms — יורים בקשה זהה נוספת (אותו קול, ללא פשרה): "${text.slice(0, 30)}"`);
+      attempt(true); // בקשה שנייה, מקבילה — לא מבטלים את הראשונה, פשוט לא מחכים לה יותר
+    }, TTS_HEDGE_DELAY_MS);
+  });
+}
+
 async function _fetchTTSOnceRaw(text, voiceKey, speed) {
   const profile = EDGE_VOICES[voiceKey] || EDGE_VOICES['edge:avri'];
   try {
-    return await _fetchEdgeTTS(text, profile, speed);
+    return await _fetchEdgeTTSHedged(text, profile, speed);
   } catch (err) {
-    log('⚠️', 'edge-tts נכשל, עובר לגיבוי espeak-ng: ' + err.message.slice(0, 150));
+    log('⚠️', 'edge-tts נכשל (כולל מרוץ כפול), עובר לגיבוי espeak-ng: ' + err.message.slice(0, 150));
     return await _fetchEspeakFallback(text, voiceKey, speed);
   }
 }
