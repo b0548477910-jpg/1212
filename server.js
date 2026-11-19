@@ -991,7 +991,13 @@ function revealAnswer() {
   // שכולם הספיקו לענות (המקרה הפחות שכיח), אין לנו pre-compute תקף לסיבוב הזה — מחשבים
   // עכשיו כרגיל (יהיה עיכוב קטן וסביר, בדיוק כמו שהיה קודם).
   let narratorZinger = (precomputedZingerForRound === questionStartedAt) ? precomputedZinger : pickZinger(q);
-  if (narratorZinger) log('🎭', `עקיצה/מחמאה: "${narratorZinger}"`);
+  if (narratorZinger) {
+    log('🎭', `עקיצה/מחמאה: "${narratorZinger}"`);
+    // 🩹 אם לא הוכנה מראש (הטיימר נגמר בלי ש"כולם ענו") — מתחילים לייצר עכשיו, במקביל להקראת
+    // "התשובה הנכונה היא...", ולא רק אחרי שהיא נגמרה. dedup/cache מונע ייצור כפול אם כבר הוכנה.
+    const _zVoice = _lastClientVoice || getRoomSetting('trivia_voice', 'edge:avri');
+    fetchTTS(narratorZinger, _zVoice, _lastClientSpeed).catch(() => {});
+  }
   precomputedZinger = null; precomputedZingerForRound = null;
   revealHadZinger = !!narratorZinger; // ✅ advanceToNextQuestion יבדוק את זה כדי לתת לעקיצה זמן אמיתי להישמע
 
@@ -1831,6 +1837,12 @@ function logTtsError(emoji, fullMsg) {
 }
 
 async function fetchTTS(text, voiceKey, speed = 1.0) {
+  // 🩹 תיקון עיכוב בין עקיצה לשאלה: הלקוח מבקש /tts עם טקסט אחרי stripEmoji (בלי אימוג'י/סימנים מיוחדים),
+  // אבל pre-warm של עקיצה/מחמאה (שם שחקן עם אימוג'י, מקף ארוך וכו') ושל "התשובה הנכונה היא" נשלח גולמי —
+  // מפתחות המטמון לא תאמו, ה-pre-warm הלך לאיבוד והלקוח חיכה לייצור חדש מאפס (3-8 שניות).
+  // מנרמלים כאן במקום אחד, כך שכל pre-warm ובקשת לקוח תמיד מגיעים לאותו מפתח.
+  text = stripForTTS(text || '').slice(0, 500).trim();
+  if (!text) throw new Error('empty tts text');
   const cacheKey = voiceKey + '|' + speed + '|' + text;
   if (_ttsCache.has(cacheKey)) return _ttsCache.get(cacheKey);
   // ✅ dedup: אם ייצור זהה כבר בתהליך (pre-warm + בקשת לקוח במקביל) — מחכים לאותו Promise
