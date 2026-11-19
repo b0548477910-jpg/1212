@@ -4200,10 +4200,18 @@ function handle(d){
           // והשרת מחכה לאישור זינגר-בפועל לפני מעבר לשאלה הבאה (ראו /zinger-narrator-done).
           const revealText = 'התשובה הנכונה היא: ' + d.correctText;
           const zingerText = d.narratorZinger || null;
+          // 🩹 מורידים את אודיו העקיצה כבר עכשיו, במקביל להקראת "התשובה הנכונה", כדי שיהיה במטמון
+          // כשהיא תגיע לתורה (בלי זה ההורדה התחילה רק אחרי שהתשובה נגמרה → שתיקה של כמה שניות).
+          if (zingerText && typeof isEdgeVoice === 'function' && isEdgeVoice(selectedVoiceName)) {
+            preloadEdge(stripEmoji(zingerText).slice(0, 500), selectedVoiceName, narratorSpeed());
+          }
           _ttsPlay(revealText, TTS_PRI.QUESTION, () => {
             notifyRevealDone();
-            if (zingerText) _ttsPlay(zingerText, TTS_PRI.LOW, notifyZingerDone);
-            else notifyZingerDone();
+            if (zingerText) {
+              _ttsPlay(zingerText, TTS_PRI.LOW, notifyZingerDone);
+              // אם קול אחר קוטע את העקיצה, cancelAllSpeech יקרא ל-notifyZingerDone ולא נחכה ל-fallback
+              _ttsNarratorDone = notifyZingerDone;
+            } else notifyZingerDone();
           });
           _ttsNarratorDone = notifyRevealDone;
         } else {
@@ -5732,6 +5740,9 @@ function _ttsPlay(text, pri, onEnd) {
 
   if (pri < _ttsCurrentPri) {
     ttsLog(`_ttsPlay SKIP — lower pri ${priName} < current ${_ttsCurrentPri}`, { text: text.slice(0,40) });
+    // 🩹 גם בדילוג חייבים לקרוא ל-onEnd, כמו בשאר ענפי ה-SKIP — אחרת notifyZingerDone לא נשלח
+    // והשרת ממתין את כל ה-fallback (9 שניות) לפני מעבר לשאלה הבאה.
+    onEnd && onEnd();
     return;
   }
 
